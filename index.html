@@ -317,7 +317,7 @@
 <div id="app">
   <div id="view-dashboard"></div>
   <div id="view-log" style="display:none"></div>
-  <div id="view-pokedex" style="display:none"></div>
+  <div id="view-shroomadex" style="display:none"></div>
   <div id="view-harvest" style="display:none"></div>
   <div id="view-lab" style="display:none"></div>
 
@@ -330,9 +330,9 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
       <span>LOG</span>
     </button>
-    <button class="nav-btn" onclick="showView('pokedex')" id="nav-pokedex">
+    <button class="nav-btn" onclick="showView('shroomadex')" id="nav-shroomadex">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M12 8c-2.2 0-4 1.8-4 4s1.8 4 4 4 4-1.8 4-4-1.8-4-4-4z"/><path d="M3 12h6M15 12h6"/></svg>
-      <span>POKÉDEX</span>
+      <span>SHROOMADEX</span>
     </button>
     <button class="nav-btn" onclick="showView('harvest')" id="nav-harvest">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 6h18M3 12h18M3 18h18"/><circle cx="7" cy="6" r="1" fill="currentColor"/><circle cx="7" cy="12" r="1" fill="currentColor"/><circle cx="7" cy="18" r="1" fill="currentColor"/></svg>
@@ -356,7 +356,7 @@
   <div class="modal-overlay" id="modal-species">
     <div class="modal">
       <div class="modal-handle"></div>
-      <div class="modal-title">Add Species to Pokédex</div>
+      <div class="modal-title">Add Species to Shroomadex</div>
       <div id="modal-species-content"></div>
     </div>
   </div>
@@ -505,7 +505,7 @@ const CULT_METHODS = ['Spore Print → Agar','Spore Print → Syringe','Agar →
 // ============================================================
 // VIEW ROUTER
 // ============================================================
-const VIEWS = ['dashboard','log','pokedex','harvest','lab'];
+const VIEWS = ['dashboard','log','shroomadex','harvest','lab'];
 function showView(v) {
   VIEWS.forEach(name => {
     document.getElementById('view-' + name).style.display = name === v ? '' : 'none';
@@ -516,7 +516,7 @@ function showView(v) {
 function renderView(v) {
   if (v === 'dashboard') renderDashboard();
   if (v === 'log') renderLog();
-  if (v === 'pokedex') renderPokedex();
+  if (v === 'shroomadex') renderShroomadex();
   if (v === 'harvest') renderHarvest();
   if (v === 'lab') renderLab();
 }
@@ -636,7 +636,7 @@ function renderDashboard() {
         <button class="btn btn-gold btn-full" onclick="showView('harvest');setTimeout(openHarvestModal,100)">+ HARVEST</button>
       </div>
       <div class="stat-grid">
-        <button class="btn btn-ghost btn-full" onclick="showView('pokedex');setTimeout(openSpeciesModal,100)">+ SPECIES</button>
+        <button class="btn btn-ghost btn-full" onclick="showView('shroomadex');setTimeout(openSpeciesModal,100)">+ SPECIES</button>
         <button class="btn btn-ghost btn-full" onclick="showView('lab');setTimeout(openLabModal,100)">+ LAB RUN</button>
       </div>
 
@@ -866,13 +866,13 @@ function deleteLogEntry(id) {
 }
 
 // ============================================================
-// POKÉDEX
+// SHROOMADEX
 // ============================================================
-function renderPokedex() {
+function renderShroomadex() {
   const species = getData('species', []);
-  document.getElementById('view-pokedex').innerHTML = `
+  document.getElementById('view-shroomadex').innerHTML = `
     <div class="header">
-      <div class="header-label">SPECIES POKÉDEX</div>
+      <div class="header-label">SPECIES SHROOMADEX</div>
       <div class="header-title">Field Identification</div>
       <div class="header-sub">${species.length} species documented</div>
     </div>
@@ -1038,7 +1038,7 @@ function openSpeciesModal() {
       <input type="color" id="sf-color" value="#8B7355" style="width:100%;height:40px;border:1px solid var(--border2);border-radius:4px;background:var(--bg2);">
     </div>
     <div class="flex gap-8">
-      <button class="btn btn-primary" style="flex:1;" onclick="saveSpecies()">SAVE TO POKÉDEX</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="saveSpecies()">SAVE TO SHROOMADEX</button>
       <button class="btn btn-ghost" onclick="closeModal('modal-species')">CANCEL</button>
     </div>
   `;
@@ -1086,8 +1086,8 @@ function saveSpecies() {
   });
   setData('species', species);
   closeModal('modal-species');
-  showToast('Species added to Pokédex ✓');
-  renderPokedex();
+  showToast('Species added to Shroomadex ✓');
+  renderShroomadex();
 }
 
 function deleteSpecies(id) {
@@ -1095,7 +1095,7 @@ function deleteSpecies(id) {
   const species = getData('species', []).filter(s => s.id != id);
   setData('species', species);
   showToast('Species removed');
-  renderPokedex();
+  renderShroomadex();
 }
 
 // ============================================================
