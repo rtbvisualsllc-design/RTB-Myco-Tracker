@@ -1,0 +1,1530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MycoTracker">
+<title>RTB Myco Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080705;
+    --bg2: #0f0d09;
+    --bg3: #161310;
+    --border: rgba(139,115,85,0.18);
+    --border2: rgba(139,115,85,0.32);
+    --gold: #8B7355;
+    --gold2: #C4A882;
+    --gold3: #E8D5B0;
+    --dim: #5A4A35;
+    --dimmer: #3A2A1A;
+    --green: #4A7C59;
+    --green2: #6B8F71;
+    --red: #8B3A3A;
+    --red2: #C45A5A;
+    --orange: #8B5A2A;
+    --orange2: #C4823C;
+    --blue: #2A4A6B;
+    --blue2: #4A7AAB;
+    --purple: #5A3A7A;
+    --purple2: #8A6AAA;
+    --s1: #8B7355;
+    --s2: #C17D3C;
+    --s3: #6B8F71;
+    --s4: #4A7C59;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    background: var(--bg);
+    color: var(--gold2);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 15% 40%, rgba(25,20,10,0.9) 0%, transparent 55%),
+      radial-gradient(ellipse at 85% 15%, rgba(15,25,12,0.7) 0%, transparent 45%),
+      radial-gradient(ellipse at 50% 90%, rgba(20,15,8,0.6) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  #app { position: relative; z-index: 1; max-width: 480px; margin: 0 auto; min-height: 100vh; padding-bottom: 80px; }
+
+  /* NAV */
+  .nav {
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 480px;
+    background: rgba(8,7,5,0.97);
+    border-top: 1px solid var(--border);
+    display: flex;
+    z-index: 100;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+  .nav-btn {
+    flex: 1; padding: 12px 4px 10px;
+    background: none; border: none; cursor: pointer;
+    color: var(--dim); font-size: 9px; letter-spacing: 1px;
+    font-family: 'DM Mono', monospace;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    transition: color 0.2s;
+  }
+  .nav-btn.active { color: var(--gold2); }
+  .nav-btn svg { width: 20px; height: 20px; }
+  .nav-btn span { font-size: 8px; letter-spacing: 1.5px; }
+
+  /* HEADER */
+  .header {
+    padding: 54px 20px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .header-label { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 4px; color: var(--dim); margin-bottom: 4px; }
+  .header-title { font-family: 'Playfair Display', serif; font-size: 28px; color: var(--gold3); line-height: 1.1; }
+  .header-sub { font-size: 12px; color: var(--dim); margin-top: 4px; }
+
+  /* SECTIONS */
+  .section { padding: 16px 16px; }
+  .section-title { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 3px; color: var(--dim); margin-bottom: 12px; }
+
+  /* CARDS */
+  .card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px;
+    margin-bottom: 10px;
+  }
+  .card-accent-green { border-left: 3px solid var(--green2); }
+  .card-accent-gold { border-left: 3px solid var(--gold); }
+  .card-accent-red { border-left: 3px solid var(--red2); }
+  .card-accent-orange { border-left: 3px solid var(--orange2); }
+  .card-accent-purple { border-left: 3px solid var(--purple2); }
+  .card-accent-blue { border-left: 3px solid var(--blue2); }
+
+  /* STAT GRID */
+  .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 14px; }
+  .stat-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+  .stat-box {
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 6px;
+    padding: 12px 10px; text-align: center;
+  }
+  .stat-val { font-family: 'Playfair Display', serif; font-size: 24px; color: var(--gold3); line-height: 1; }
+  .stat-val.green { color: var(--green2); }
+  .stat-val.orange { color: var(--orange2); }
+  .stat-val.purple { color: var(--purple2); }
+  .stat-lbl { font-family: 'DM Mono', monospace; font-size: 8px; letter-spacing: 2px; color: var(--dim); margin-top: 4px; }
+
+  /* SUCCESSION BAR */
+  .succ-bar { background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; padding: 14px; margin-bottom: 14px; }
+  .succ-track { display: flex; margin-top: 10px; }
+  .succ-step { flex: 1; text-align: center; }
+  .succ-line { height: 3px; background: var(--border); transition: background 0.4s; }
+  .succ-line.active { background: var(--green2); }
+  .succ-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--border); margin: -6px auto 6px;
+    transition: all 0.4s;
+  }
+  .succ-dot.active { background: var(--green2); }
+  .succ-dot.current { background: var(--green2); box-shadow: 0 0 10px rgba(107,143,113,0.6); border: 2px solid var(--gold3); }
+  .succ-lbl { font-family: 'DM Mono', monospace; font-size: 8px; color: var(--dimmer); letter-spacing: 1px; }
+  .succ-lbl.active { color: var(--green2); }
+  .succ-species { font-size: 8px; color: var(--dimmer); margin-top: 2px; line-height: 1.3; }
+
+  /* FORMS */
+  .form-group { margin-bottom: 12px; }
+  .form-label { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 2px; color: var(--dim); display: block; margin-bottom: 5px; }
+  .form-input, .form-select, .form-textarea {
+    width: 100%; background: rgba(15,13,9,0.9);
+    border: 1px solid var(--border2); border-radius: 4px;
+    color: var(--gold2); padding: 10px 12px; font-size: 14px;
+    font-family: 'DM Sans', sans-serif;
+    -webkit-appearance: none; appearance: none;
+  }
+  .form-input:focus, .form-select:focus, .form-textarea:focus {
+    outline: none; border-color: var(--gold);
+  }
+  .form-textarea { height: 80px; resize: vertical; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+
+  /* BUTTONS */
+  .btn {
+    padding: 11px 18px; border-radius: 5px; cursor: pointer;
+    font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 2px;
+    border: none; font-weight: 500; transition: all 0.2s;
+  }
+  .btn-primary { background: rgba(107,143,113,0.2); border: 1px solid rgba(107,143,113,0.4); color: var(--green2); }
+  .btn-primary:active { background: rgba(107,143,113,0.35); }
+  .btn-gold { background: rgba(139,115,85,0.2); border: 1px solid rgba(139,115,85,0.4); color: var(--gold2); }
+  .btn-danger { background: rgba(139,58,58,0.15); border: 1px solid rgba(139,58,58,0.3); color: var(--red2); }
+  .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--dim); }
+  .btn-sm { padding: 6px 12px; font-size: 9px; }
+  .btn-full { width: 100%; }
+
+  /* TAGS / PILLS */
+  .pill {
+    display: inline-block; padding: 3px 8px; border-radius: 3px;
+    font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 1px;
+    white-space: nowrap;
+  }
+  .pill-green { background: rgba(74,124,89,0.2); border: 1px solid rgba(74,124,89,0.3); color: var(--green2); }
+  .pill-red { background: rgba(139,58,58,0.2); border: 1px solid rgba(139,58,58,0.3); color: var(--red2); }
+  .pill-orange { background: rgba(139,90,42,0.2); border: 1px solid rgba(139,90,42,0.3); color: var(--orange2); }
+  .pill-gold { background: rgba(139,115,85,0.2); border: 1px solid rgba(139,115,85,0.3); color: var(--gold2); }
+  .pill-purple { background: rgba(90,58,122,0.2); border: 1px solid rgba(90,58,122,0.3); color: var(--purple2); }
+  .pill-blue { background: rgba(42,74,107,0.2); border: 1px solid rgba(42,74,107,0.3); color: var(--blue2); }
+  .pill-gray { background: rgba(80,70,55,0.2); border: 1px solid rgba(80,70,55,0.3); color: var(--dim); }
+
+  /* COLLAPSIBLE */
+  .collapse-header {
+    display: flex; justify-content: space-between; align-items: center;
+    cursor: pointer; user-select: none;
+  }
+  .collapse-arrow { color: var(--dim); transition: transform 0.2s; font-size: 12px; }
+  .collapse-arrow.open { transform: rotate(180deg); }
+  .collapse-body { overflow: hidden; transition: max-height 0.3s ease; max-height: 0; }
+  .collapse-body.open { max-height: 2000px; }
+
+  /* MODAL OVERLAY */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+    z-index: 200; display: flex; align-items: flex-end;
+    opacity: 0; pointer-events: none; transition: opacity 0.25s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal {
+    background: var(--bg2); border: 1px solid var(--border2);
+    border-radius: 16px 16px 0 0; width: 100%; max-width: 480px;
+    margin: 0 auto; padding: 20px 16px 40px;
+    max-height: 90vh; overflow-y: auto;
+    transform: translateY(100%); transition: transform 0.3s ease;
+  }
+  .modal-overlay.open .modal { transform: translateY(0); }
+  .modal-handle { width: 36px; height: 4px; background: var(--border2); border-radius: 2px; margin: 0 auto 18px; }
+  .modal-title { font-family: 'Playfair Display', serif; font-size: 20px; color: var(--gold3); margin-bottom: 16px; }
+
+  /* SPECIES CARD */
+  .species-card {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 6px; margin-bottom: 8px; overflow: hidden;
+  }
+  .species-card-header {
+    padding: 12px 14px; display: flex; align-items: center; gap: 10px;
+    cursor: pointer;
+  }
+  .species-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .species-name { font-size: 13px; color: var(--gold2); font-style: italic; flex: 1; }
+  .species-card-body { padding: 0 14px 14px; border-top: 1px solid var(--border); }
+
+  /* PHOTO */
+  .photo-box {
+    width: 100%; aspect-ratio: 4/3; background: var(--bg2);
+    border: 1px dashed var(--border2); border-radius: 4px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    cursor: pointer; gap: 6px; margin-bottom: 10px;
+  }
+  .photo-box img { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; }
+  .photo-box-label { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--dim); letter-spacing: 2px; }
+
+  /* LOG ENTRY */
+  .log-entry {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 6px; margin-bottom: 8px; overflow: hidden;
+  }
+  .log-entry-header {
+    padding: 12px 14px; display: flex; align-items: center;
+    gap: 10px; cursor: pointer; flex-wrap: wrap;
+  }
+  .log-day { font-family: 'Playfair Display', serif; font-size: 22px; color: var(--gold3); min-width: 36px; }
+  .log-date { font-size: 13px; color: var(--gold2); }
+  .log-obs { font-size: 11px; color: var(--dim); }
+
+  /* HARVEST */
+  .harvest-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 0; border-bottom: 1px solid var(--border);
+  }
+  .harvest-row:last-child { border-bottom: none; }
+
+  /* CULTIVATION */
+  .cult-stage {
+    display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap;
+  }
+  .cult-stage-btn {
+    padding: 5px 10px; border-radius: 3px; cursor: pointer;
+    font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 1px;
+    background: transparent; border: 1px solid var(--border);
+    color: var(--dim); transition: all 0.2s;
+  }
+  .cult-stage-btn.active { background: rgba(107,143,113,0.2); border-color: rgba(107,143,113,0.4); color: var(--green2); }
+
+  /* TABS */
+  .tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 14px; }
+  .tab-btn {
+    flex: 1; padding: 10px 4px; background: none; border: none;
+    font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 1.5px;
+    color: var(--dim); cursor: pointer; border-bottom: 2px solid transparent;
+    margin-bottom: -1px; transition: all 0.2s;
+  }
+  .tab-btn.active { color: var(--gold2); border-bottom-color: var(--gold); }
+
+  /* ALERT */
+  .alert {
+    padding: 10px 12px; border-radius: 4px; font-size: 12px;
+    margin-bottom: 10px; line-height: 1.5;
+  }
+  .alert-warn { background: rgba(139,90,42,0.15); border: 1px solid rgba(139,90,42,0.3); color: var(--orange2); }
+  .alert-info { background: rgba(42,74,107,0.15); border: 1px solid rgba(42,74,107,0.3); color: var(--blue2); }
+  .alert-danger { background: rgba(139,58,58,0.15); border: 1px solid rgba(139,58,58,0.3); color: var(--red2); }
+
+  /* EMPTY STATE */
+  .empty { text-align: center; padding: 40px 20px; color: var(--dimmer); font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 2px; }
+
+  /* TOAST */
+  .toast {
+    position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+    background: var(--bg3); border: 1px solid var(--green2);
+    color: var(--green2); padding: 10px 20px; border-radius: 20px;
+    font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 2px;
+    z-index: 300; opacity: 0; transition: opacity 0.3s;
+    pointer-events: none; white-space: nowrap;
+  }
+  .toast.show { opacity: 1; }
+
+  .divider { height: 1px; background: var(--border); margin: 12px 0; }
+  .mt-8 { margin-top: 8px; }
+  .mt-12 { margin-top: 12px; }
+  .flex { display: flex; }
+  .flex-between { display: flex; justify-content: space-between; align-items: center; }
+  .gap-8 { gap: 8px; }
+  .wrap { flex-wrap: wrap; }
+  .italic { font-style: italic; }
+  .mono { font-family: 'DM Mono', monospace; }
+  .small { font-size: 11px; }
+  .tiny { font-size: 9px; letter-spacing: 1px; }
+  .dim { color: var(--dim); }
+  .gold3 { color: var(--gold3); }
+  .serif { font-family: 'Playfair Display', serif; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="view-dashboard"></div>
+  <div id="view-log" style="display:none"></div>
+  <div id="view-pokedex" style="display:none"></div>
+  <div id="view-harvest" style="display:none"></div>
+  <div id="view-lab" style="display:none"></div>
+
+  <nav class="nav">
+    <button class="nav-btn active" onclick="showView('dashboard')" id="nav-dashboard">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      <span>DASH</span>
+    </button>
+    <button class="nav-btn" onclick="showView('log')" id="nav-log">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+      <span>LOG</span>
+    </button>
+    <button class="nav-btn" onclick="showView('pokedex')" id="nav-pokedex">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M12 8c-2.2 0-4 1.8-4 4s1.8 4 4 4 4-1.8 4-4-1.8-4-4-4z"/><path d="M3 12h6M15 12h6"/></svg>
+      <span>POKÉDEX</span>
+    </button>
+    <button class="nav-btn" onclick="showView('harvest')" id="nav-harvest">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 6h18M3 12h18M3 18h18"/><circle cx="7" cy="6" r="1" fill="currentColor"/><circle cx="7" cy="12" r="1" fill="currentColor"/><circle cx="7" cy="18" r="1" fill="currentColor"/></svg>
+      <span>HARVEST</span>
+    </button>
+    <button class="nav-btn" onclick="showView('lab')" id="nav-lab">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 3h6M10 3v6l-4 9a1 1 0 00.9 1.4h10.2a1 1 0 00.9-1.4L14 9V3"/></svg>
+      <span>LAB</span>
+    </button>
+  </nav>
+
+  <!-- MODALS -->
+  <div class="modal-overlay" id="modal-log-entry">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div class="modal-title">Field Log Entry</div>
+      <div id="modal-log-content"></div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-species">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div class="modal-title">Add Species to Pokédex</div>
+      <div id="modal-species-content"></div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-harvest">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div class="modal-title">Log Harvest</div>
+      <div id="modal-harvest-content"></div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-lab">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div class="modal-title">New Cultivation Run</div>
+      <div id="modal-lab-content"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+// ============================================================
+// DATA STORE
+// ============================================================
+const DB = {
+  get(key) { try { return JSON.parse(localStorage.getItem('rtb_' + key) || 'null'); } catch(e) { return null; } },
+  set(key, val) { try { localStorage.setItem('rtb_' + key, JSON.stringify(val)); } catch(e) {} },
+};
+
+function getData(key, def) { return DB.get(key) ?? def; }
+function setData(key, val) { DB.set(key, val); }
+
+// INITIAL SEED DATA
+function initData() {
+  if (!DB.get('seeded')) {
+    setData('log_entries', [
+      { id: 1, date: '2025-05-19', dayNum: 1, tempHigh: 92, tempLow: 80, rainfall: true, rainfallAmt: 'heavy', humidity: 'high', succStage: 1, observations: [
+        { species: 'Panaeolus antillarum', location: 'Horse Hay Area', abundance: 'clusters', notes: 'First big flush of season' },
+        { species: 'Panaeolus antillarum', location: 'Goat Play Area', abundance: 'clusters', notes: '' },
+        { species: 'Panaeolus antillarum', location: 'Front Gate', abundance: 'clusters', notes: '' },
+        { species: 'Ink Cap (Coprinellus sp.)', location: 'Horse Hay Area', abundance: 'several', notes: 'Multiple areas' },
+      ], notes: 'Season start! First big breakthrough. Rain 2 days prior triggered flush.' },
+      { id: 2, date: '2025-05-20', dayNum: 2, tempHigh: 93, tempLow: 80, rainfall: true, rainfallAmt: 'moderate', humidity: 'high', succStage: 1, observations: [
+        { species: 'Panaeolus antillarum', location: 'Horse Hay Area', abundance: 'clusters', notes: '' },
+        { species: 'Panaeolus antillarum', location: 'OG Pile - Back Left', abundance: 'first appearance', notes: 'NEW LOCATION' },
+      ], notes: 'More rain. New manure pile started behind barn.' },
+      { id: 3, date: '2025-05-21', dayNum: 3, tempHigh: 93, tempLow: 80, rainfall: false, rainfallAmt: 'none', humidity: 'high', succStage: 1, observations: [
+        { species: 'Panaeolus antillarum', location: 'Back Fence Line', abundance: 'spreading', notes: 'Noticed more along back fence' },
+        { species: 'Ink Cap (Coprinellus sp.)', location: 'Behind Barn', abundance: 'several', notes: 'Found in old manure' },
+      ], notes: 'Light rain previous day. Pan ant holding strong all spots.' },
+      { id: 4, date: '2025-05-23', dayNum: 4, tempHigh: 94, tempLow: 81, rainfall: false, rainfallAmt: 'none', humidity: 'high', succStage: 1, observations: [
+        { species: 'Panaeolus antillarum', location: 'Horse Hay Area', abundance: 'massive clusters', notes: 'Best day yet - peak flush' },
+      ], notes: 'Best day yet. Largest clusters across all locations.' },
+      { id: 5, date: '2025-05-24', dayNum: 5, tempHigh: 93, tempLow: 80, rainfall: true, rainfallAmt: 'heavy', humidity: 'high', succStage: 1, observations: [
+        { species: 'Panaeolus antillarum', location: 'OG Pile - Front Left', abundance: 'first appearance', notes: '' },
+        { species: 'Panaeolus antillarum', location: 'Front Facing Barn', abundance: 'massive clusters', notes: 'Ocean of mushrooms' },
+      ], notes: 'Lots of rain night before. New corners of OG pile activating.' },
+      { id: 6, date: '2025-05-26', dayNum: 6, tempHigh: 93, tempLow: 80, rainfall: false, rainfallAmt: 'light prev 2 days', humidity: 'high', succStage: 3, observations: [
+        { species: 'Panaeolus antillarum', location: 'Horse Hay Area', abundance: 'fading', notes: '' },
+        { species: 'Conocybe sp. (Milky Cone Cap)', location: 'Horse Hay Area', abundance: 'first', notes: 'FIRST CONOCYBE - succession marker' },
+        { species: 'Ink Cap (Coprinellus sp.)', location: 'New Pile Behind Barn', abundance: 'tons', notes: '' },
+        { species: 'Panaeolus papilionaceus', location: 'Horse Hay Area', abundance: 'few', notes: '' },
+        { species: 'Chlorophyllum molybdites', location: 'OG Pile - Back Left', abundance: 'one', notes: 'False parasol - TOXIC' },
+      ], notes: 'Succession advancing. Conocybe = significant marker. Most original spots fading.' },
+      { id: 7, date: '2025-05-27', dayNum: 7, tempHigh: 93, tempLow: 80, rainfall: true, rainfallAmt: 'heavy', humidity: 'high', succStage: 3, observations: [
+        { species: 'Panaeolus antillarum', location: 'New Pile Behind Barn', abundance: 'lots', notes: '' },
+        { species: 'Bolbitius coprophilus', location: 'New Pile Behind Barn', abundance: 'several', notes: 'Red when young, brown when mature' },
+        { species: 'Panaeolus papilionaceus', location: 'Horse Hay Area', abundance: 'lots', notes: '' },
+        { species: 'Conocybe sp. (Milky Cone Cap)', location: 'Horse Hay Area', abundance: 'few', notes: '' },
+      ], notes: 'Heavy rain reset flush cycle. New pile very active. Old spots transitioning.' },
+    ]);
+
+    setData('species', [
+      { id: 1, name: 'Panaeolus antillarum', commonName: 'Dunce Cap / Cracked Cap', guild: 'coprophilous', edibility: 'inedible', toxicity: 'none', psychoactive: false, firstSeen: '2025-05-19', lastSeen: '2025-05-27', locations: ['Horse Hay Area','Goat Play Area','Front Gate','OG Pile','New Pile'], substrate: 'Horse/donkey manure', succStage: 1, notes: 'Dominant early succession species. Appears first after rain on fresh-aged manure. Pioneer indicator - when peaking, cubensis is typically 5-14 days out. White cap that cracks in heat. Black spore print.', photo: null, color: '#8B7355' },
+      { id: 2, name: 'Ink Cap (Coprinellus sp.)', commonName: 'Inky Cap', guild: 'coprophilous', edibility: 'inedible', toxicity: 'low', psychoactive: false, firstSeen: '2025-05-19', lastSeen: '2025-05-27', locations: ['Horse Hay Area','Behind Barn','New Pile'], substrate: 'Old manure / decaying organic', succStage: 1, notes: 'Fast fruiting, autoliquefies (autodigests) quickly. Wide decomposition range. Early succession companion to pan ant.', photo: null, color: '#2C2C2C' },
+      { id: 3, name: 'Panaeolus papilionaceus', commonName: 'Petticoat Mottlegill', guild: 'coprophilous', edibility: 'inedible', toxicity: 'low', psychoactive: false, firstSeen: '2025-05-26', lastSeen: '2025-05-27', locations: ['Horse Hay Area'], substrate: 'Manure', succStage: 2, notes: 'Close relative of pan ant. Mid-succession. Mildly psychoactive in some populations but inconsistently.', photo: null, color: '#9B7E6E' },
+      { id: 4, name: 'Bolbitius coprophilus', commonName: 'Dung Fieldcap', guild: 'coprophilous', edibility: 'inedible', toxicity: 'none', psychoactive: false, firstSeen: '2025-05-27', lastSeen: '2025-05-27', locations: ['New Pile Behind Barn'], substrate: 'Fresh manure', succStage: 2, notes: 'Red/rusty when young pins, turns brown when mature. No real lookalike concern. Good dung succession marker.', photo: null, color: '#C17D3C' },
+      { id: 5, name: 'Conocybe sp. (Milky Cone Cap)', commonName: 'Milky Cone Cap', guild: 'coprophilous', edibility: 'TOXIC', toxicity: 'HIGH - possible amatoxins', psychoactive: false, firstSeen: '2025-05-26', lastSeen: '2025-05-27', locations: ['Horse Hay Area'], substrate: 'Manure / enriched soil', succStage: 3, notes: '⚠️ DANGER: Some Conocybe species (esp. C. filaris) contain amatoxins identical to death caps. Grows in same substrate as cubensis. Cone-shaped, fragile. NEVER consume. Key late-succession indicator - when present, cubensis window is open.', photo: null, color: '#D4C5A9' },
+      { id: 6, name: 'Chlorophyllum molybdites', commonName: 'False Parasol / Green-Spored Lepiota', guild: 'saprotrophic', edibility: 'TOXIC', toxicity: 'HIGH - severe GI', psychoactive: false, firstSeen: '2025-05-26', lastSeen: '2025-05-26', locations: ['OG Pile - Back Left'], substrate: 'Soil / disturbed ground', succStage: 2, notes: '⚠️ TOXIC: Most commonly eaten poisonous mushroom in North America. Causes severe vomiting/diarrhea. Green spore print distinguishes it. Loves Florida lawns and disturbed humid areas. DO NOT eat.', photo: null, color: '#7A9E5F' },
+    ]);
+
+    setData('harvests', []);
+    setData('lab_runs', []);
+    setData('seeded', true);
+  }
+}
+
+// ============================================================
+// UTILITIES
+// ============================================================
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+  document.body.style.overflow = '';
+}
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) closeModal(m.id); });
+});
+
+function formatDate(d) {
+  const dt = new Date(d + 'T12:00:00');
+  return dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+function uid() { return Date.now() + Math.random().toString(36).slice(2); }
+
+function toggle(id) {
+  const el = document.getElementById(id);
+  const arr = document.getElementById(id + '_arrow');
+  if (el) el.classList.toggle('open');
+  if (arr) arr.classList.toggle('open');
+}
+
+const LOCATIONS = [
+  'Horse Hay Area','Goat Play Area','Front Gate',
+  'OG Pile - Front Left','OG Pile - Front Right','OG Pile - Back Left','OG Pile - Back Right',
+  'New Pile Behind Barn','Back Fence Line','Behind Barn','Front Facing Barn','Other'
+];
+
+const ABUNDANCE = ['first appearance','solitary','few','several','clusters','massive clusters','fading','gone'];
+
+const EDIBILITY = ['edible','edible - caution','inedible','TOXIC','unknown'];
+const TOXICITY = ['none','low','moderate','HIGH - GI','HIGH - amatoxins','HIGH - other'];
+const GUILDS = ['coprophilous','saprotrophic','mycorrhizal','parasitic','unknown'];
+
+const SUCC_LABELS = ['','Early','Mid','Late/Pre-Cube','PEAK - Cubensis'];
+const SUCC_COLORS = ['','#8B7355','#C17D3C','#6B8F71','#4A7C59'];
+const SUCC_SPECIES = ['','Pan ant · Ink caps','Mottlegills · Bolbitius','Conocybe · Fading pioneers','P. cubensis active'];
+
+const CULT_STAGES = ['Spore Print','Spore Syringe','Agar Work','Grain Spawn','Bulk Substrate','Pinning','Fruiting','Harvest Complete','Failed'];
+const CULT_METHODS = ['Spore Print → Agar','Spore Print → Syringe','Agar → Grain','Grain → Bulk','PF Tek','Other'];
+
+// ============================================================
+// VIEW ROUTER
+// ============================================================
+const VIEWS = ['dashboard','log','pokedex','harvest','lab'];
+function showView(v) {
+  VIEWS.forEach(name => {
+    document.getElementById('view-' + name).style.display = name === v ? '' : 'none';
+    document.getElementById('nav-' + name).classList.toggle('active', name === v);
+  });
+  renderView(v);
+}
+function renderView(v) {
+  if (v === 'dashboard') renderDashboard();
+  if (v === 'log') renderLog();
+  if (v === 'pokedex') renderPokedex();
+  if (v === 'harvest') renderHarvest();
+  if (v === 'lab') renderLab();
+}
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+function renderDashboard() {
+  const entries = getData('log_entries', []);
+  const species = getData('species', []);
+  const harvests = getData('harvests', []);
+  const labRuns = getData('lab_runs', []);
+
+  const totalDays = entries.length;
+  const totalObs = entries.reduce((s, e) => s + (e.observations?.length || 0), 0);
+  const uniqueSp = new Set(entries.flatMap(e => e.observations?.map(o => o.species) || [])).size;
+  const latest = entries[entries.length - 1];
+  const succStage = latest?.succStage || 1;
+
+  const totalWetG = harvests.reduce((s, h) => s + Number(h.wetG || 0), 0);
+  const totalDryG = harvests.reduce((s, h) => s + Number(h.dryG || 0), 0);
+
+  const seasonStart = entries[0]?.date || '2025-05-19';
+  const daysSinceStart = Math.floor((new Date() - new Date(seasonStart + 'T12:00:00')) / 86400000) + 1;
+
+  document.getElementById('view-dashboard').innerHTML = `
+    <div class="header">
+      <div class="header-label">RTB MYCOLOGICAL FIELD JOURNAL</div>
+      <div class="header-title">Season 2025</div>
+      <div class="header-sub">Florida Livestock Property · 2.5 Acres · P. cubensis tracking</div>
+    </div>
+
+    <div class="section">
+      <div class="stat-grid">
+        <div class="stat-box"><div class="stat-val">${totalDays}</div><div class="stat-lbl">DAYS LOGGED</div></div>
+        <div class="stat-box"><div class="stat-val">${daysSinceStart}</div><div class="stat-lbl">SEASON DAY</div></div>
+        <div class="stat-box"><div class="stat-val">${uniqueSp}</div><div class="stat-lbl">SPECIES SEEN</div></div>
+        <div class="stat-box"><div class="stat-val green">${harvests.length}</div><div class="stat-lbl">HARVESTS</div></div>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-box"><div class="stat-val orange">${totalWetG.toFixed(1)}g</div><div class="stat-lbl">WET TOTAL</div></div>
+        <div class="stat-box"><div class="stat-val purple">${totalDryG.toFixed(1)}g</div><div class="stat-lbl">DRY TOTAL</div></div>
+      </div>
+
+      <!-- Succession -->
+      <div class="succ-bar">
+        <div class="section-title" style="margin:0 0 6px">SUCCESSION STAGE</div>
+        <div style="font-size:12px;color:${SUCC_COLORS[succStage]};margin-bottom:8px;">${SUCC_LABELS[succStage]} — ${SUCC_SPECIES[succStage]}</div>
+        <div class="succ-track">
+          ${[1,2,3,4].map(s => `
+            <div class="succ-step">
+              <div class="succ-line ${s <= succStage ? 'active' : ''}"></div>
+              <div class="succ-dot ${s < succStage ? 'active' : s === succStage ? 'current' : ''}"></div>
+              <div class="succ-lbl ${s <= succStage ? 'active' : ''}">${SUCC_LABELS[s]}</div>
+              <div class="succ-species">${SUCC_SPECIES[s]}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <!-- Latest Entry -->
+      ${latest ? `
+      <div class="section-title">LATEST ENTRY · ${formatDate(latest.date)}</div>
+      <div class="card card-accent-gold">
+        <div class="flex-between" style="margin-bottom:8px;">
+          <div class="flex gap-8 wrap">
+            <span class="pill pill-gold">🌡️ ${latest.tempHigh}°/${latest.tempLow}°F</span>
+            <span class="pill ${latest.rainfall ? 'pill-blue' : 'pill-gray'}">${latest.rainfall ? '🌧️ ' + latest.rainfallAmt : '☀️ No rain'}</span>
+            <span class="pill pill-gold">💧 ${latest.humidity}</span>
+          </div>
+        </div>
+        ${(latest.observations || []).slice(0,3).map(o => `
+          <div style="font-size:12px;color:var(--gold2);padding:3px 0;font-style:italic;">${o.species} <span style="color:var(--dim);font-style:normal;">· ${o.location} · ${o.abundance}</span></div>
+        `).join('')}
+        ${(latest.observations||[]).length > 3 ? `<div class="tiny dim mt-8">+${(latest.observations||[]).length - 3} more observations</div>` : ''}
+        ${latest.notes ? `<div class="divider"></div><div style="font-size:12px;color:var(--dim);line-height:1.5;">${latest.notes}</div>` : ''}
+      </div>
+      ` : ''}
+
+      <!-- Weather Pattern -->
+      ${entries.length >= 3 ? `
+      <div class="section-title">RECENT WEATHER PATTERN</div>
+      <div class="card" style="padding:10px 14px;">
+        <div style="display:flex;gap:4px;overflow-x:auto;">
+          ${entries.slice(-7).map(e => `
+            <div style="text-align:center;min-width:36px;flex:1;">
+              <div style="font-size:14px;">${e.rainfall ? '🌧️' : '☀️'}</div>
+              <div class="tiny dim">${new Date(e.date+'T12:00:00').toLocaleDateString('en-US',{month:'numeric',day:'numeric'})}</div>
+              <div style="font-size:9px;color:${SUCC_COLORS[e.succStage]};">S${e.succStage}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+      ` : ''}
+
+      <!-- Active Lab Runs -->
+      ${labRuns.filter(r => !['Harvest Complete','Failed'].includes(r.stage)).length > 0 ? `
+      <div class="section-title">ACTIVE LAB RUNS</div>
+      ${labRuns.filter(r => !['Harvest Complete','Failed'].includes(r.stage)).map(r => `
+        <div class="card card-accent-purple">
+          <div class="flex-between">
+            <div>
+              <div style="font-size:12px;color:var(--gold2);">${r.name}</div>
+              <div class="tiny dim">${r.method}</div>
+            </div>
+            <span class="pill pill-purple">${r.stage}</span>
+          </div>
+        </div>
+      `).join('')}
+      ` : ''}
+
+      <!-- Quick Actions -->
+      <div class="section-title">QUICK ACTIONS</div>
+      <div class="stat-grid">
+        <button class="btn btn-primary btn-full" onclick="showView('log');setTimeout(openLogModal,100)">+ LOG TODAY</button>
+        <button class="btn btn-gold btn-full" onclick="showView('harvest');setTimeout(openHarvestModal,100)">+ HARVEST</button>
+      </div>
+      <div class="stat-grid">
+        <button class="btn btn-ghost btn-full" onclick="showView('pokedex');setTimeout(openSpeciesModal,100)">+ SPECIES</button>
+        <button class="btn btn-ghost btn-full" onclick="showView('lab');setTimeout(openLabModal,100)">+ LAB RUN</button>
+      </div>
+
+      <div class="alert alert-info mt-12">
+        <strong>🍄 Succession Note:</strong> Conocybe appeared May 26. You are in the pre-cubensis window. Watch established manure zones closely after rain events. Expected pins: 3–14 days post next significant rain.
+      </div>
+    </div>
+  `;
+}
+
+// ============================================================
+// FIELD LOG
+// ============================================================
+function renderLog() {
+  const entries = getData('log_entries', []);
+  const sorted = [...entries].sort((a,b) => b.date.localeCompare(a.date));
+
+  document.getElementById('view-log').innerHTML = `
+    <div class="header">
+      <div class="header-label">FIELD LOG</div>
+      <div class="header-title">Daily Observations</div>
+      <div class="header-sub">${entries.length} entries · Season 2025</div>
+    </div>
+    <div class="section">
+      <button class="btn btn-primary btn-full" style="margin-bottom:14px;" onclick="openLogModal()">+ LOG TODAY'S ENTRY</button>
+      ${sorted.length === 0 ? '<div class="empty">NO ENTRIES YET</div>' : ''}
+      ${sorted.map(e => renderLogEntry(e)).join('')}
+    </div>
+  `;
+}
+
+function renderLogEntry(e) {
+  const entries = getData('log_entries', []);
+  const sorted = [...entries].sort((a,b) => a.date.localeCompare(b.date));
+  const dayNum = sorted.findIndex(x => x.id === e.id) + 1;
+  const id = 'log_' + e.id;
+  return `
+    <div class="log-entry">
+      <div class="log-entry-header" onclick="toggle('${id}')">
+        <div class="log-day">${dayNum}</div>
+        <div style="flex:1;">
+          <div class="log-date">${formatDate(e.date)}</div>
+          <div class="log-obs">${(e.observations||[]).length} obs · Stage ${e.succStage}</div>
+        </div>
+        <div class="flex gap-8 wrap">
+          <span class="pill ${e.rainfall ? 'pill-blue' : 'pill-gray'}" style="font-size:9px;">${e.rainfall ? '🌧️' : '☀️'}</span>
+          <span class="pill pill-gold" style="font-size:9px;">${e.tempHigh}°F</span>
+          <span class="pill" style="background:${SUCC_COLORS[e.succStage]}22;border:1px solid ${SUCC_COLORS[e.succStage]}44;color:${SUCC_COLORS[e.succStage]};font-size:9px;">S${e.succStage}</span>
+        </div>
+        <div class="collapse-arrow" id="${id}_arrow">▼</div>
+      </div>
+      <div class="collapse-body" id="${id}">
+        <div style="padding:0 14px 14px;">
+          <div class="flex gap-8 wrap" style="margin-bottom:10px;">
+            <span class="pill pill-gold">🌡️ ${e.tempHigh}°/${e.tempLow}°F</span>
+            <span class="pill ${e.rainfall ? 'pill-blue' : 'pill-gray'}">${e.rainfall ? '🌧️ ' + e.rainfallAmt : '☀️ No rain'}</span>
+            <span class="pill pill-gold">💧 ${e.humidity}</span>
+          </div>
+          <div class="section-title">OBSERVATIONS</div>
+          ${(e.observations||[]).map(o => `
+            <div style="padding:6px 0;border-bottom:1px solid var(--border);">
+              <div style="font-size:13px;color:var(--gold2);font-style:italic;">${o.species}</div>
+              <div class="small dim">${o.location} · <span style="color:var(--green2);">${o.abundance}</span></div>
+              ${o.notes ? `<div class="tiny dim" style="margin-top:2px;">${o.notes}</div>` : ''}
+            </div>
+          `).join('')}
+          ${e.notes ? `<div class="divider"></div><div class="small dim" style="line-height:1.6;">${e.notes}</div>` : ''}
+          <div style="margin-top:10px;">
+            <button class="btn btn-danger btn-sm" onclick="deleteLogEntry(${e.id})">DELETE ENTRY</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function openLogModal() {
+  const species = getData('species', []);
+  const spNames = species.map(s => s.name);
+  document.getElementById('modal-log-content').innerHTML = `
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">DATE</label>
+        <input type="date" class="form-input" id="lf-date" value="${new Date().toISOString().split('T')[0]}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">SUCC STAGE</label>
+        <select class="form-select" id="lf-stage">
+          ${[1,2,3,4].map(s => `<option value="${s}">${s} - ${SUCC_LABELS[s]}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">HIGH TEMP °F</label>
+        <input type="number" class="form-input" id="lf-hi" value="93">
+      </div>
+      <div class="form-group">
+        <label class="form-label">LOW TEMP °F</label>
+        <input type="number" class="form-input" id="lf-lo" value="80">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">RAINFALL</label>
+        <select class="form-select" id="lf-rain">
+          <option value="false">No Rain</option>
+          <option value="true">Yes - Rain Today</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">AMOUNT</label>
+        <select class="form-select" id="lf-rainamt">
+          <option>none</option><option>light</option><option>moderate</option><option>heavy</option><option>storm</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">HUMIDITY</label>
+      <select class="form-select" id="lf-humidity">
+        <option>low</option><option>moderate</option><option selected>high</option><option>extreme</option>
+      </select>
+    </div>
+
+    <div class="divider"></div>
+    <div class="flex-between" style="margin-bottom:10px;">
+      <div class="section-title" style="margin:0;">OBSERVATIONS</div>
+      <button class="btn btn-gold btn-sm" onclick="addObsRow()">+ ADD</button>
+    </div>
+    <div id="obs-rows"></div>
+
+    <div class="divider"></div>
+    <div class="form-group">
+      <label class="form-label">FIELD NOTES</label>
+      <textarea class="form-textarea" id="lf-notes" placeholder="General observations, patterns, anything notable..."></textarea>
+    </div>
+    <div class="flex gap-8">
+      <button class="btn btn-primary" style="flex:1;" onclick="saveLogEntry()">SAVE ENTRY</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-log-entry')">CANCEL</button>
+    </div>
+  `;
+  addObsRow();
+  openModal('modal-log-entry');
+}
+
+function addObsRow() {
+  const species = getData('species', []);
+  const spNames = ['Panaeolus antillarum','Ink Cap (Coprinellus sp.)','Panaeolus papilionaceus','Bolbitius coprophilus','Conocybe sp. (Milky Cone Cap)','Chlorophyllum molybdites','Psilocybe cubensis','Unknown - needs ID',...species.map(s=>s.name)];
+  const unique = [...new Set(spNames)];
+  const id = 'obs_' + uid();
+  const row = document.createElement('div');
+  row.id = id;
+  row.style.cssText = 'background:rgba(139,115,85,0.05);border:1px solid var(--border);border-radius:4px;padding:10px;margin-bottom:8px;';
+  row.innerHTML = `
+    <div class="form-row" style="margin-bottom:8px;">
+      <div>
+        <label class="form-label">SPECIES</label>
+        <select class="form-select" id="${id}_sp">
+          ${unique.map(s => `<option>${s}</option>`).join('')}
+          <option>Other / New Species</option>
+        </select>
+      </div>
+      <div>
+        <label class="form-label">LOCATION</label>
+        <select class="form-select" id="${id}_loc">
+          ${LOCATIONS.map(l => `<option>${l}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div>
+        <label class="form-label">ABUNDANCE</label>
+        <select class="form-select" id="${id}_ab">
+          ${ABUNDANCE.map(a => `<option>${a}</option>`).join('')}
+        </select>
+      </div>
+      <div>
+        <label class="form-label">NOTES</label>
+        <input class="form-input" id="${id}_notes" placeholder="cap color, substrate...">
+      </div>
+    </div>
+    <button class="btn btn-danger btn-sm" style="margin-top:6px;" onclick="document.getElementById('${id}').remove()">REMOVE</button>
+  `;
+  document.getElementById('obs-rows').appendChild(row);
+}
+
+function saveLogEntry() {
+  const date = document.getElementById('lf-date').value;
+  if (!date) { showToast('Please enter a date'); return; }
+  const rows = document.getElementById('obs-rows').children;
+  const observations = [];
+  for (let row of rows) {
+    const id = row.id;
+    observations.push({
+      species: document.getElementById(id+'_sp')?.value || '',
+      location: document.getElementById(id+'_loc')?.value || '',
+      abundance: document.getElementById(id+'_ab')?.value || '',
+      notes: document.getElementById(id+'_notes')?.value || '',
+    });
+  }
+  const entry = {
+    id: uid(),
+    date,
+    tempHigh: Number(document.getElementById('lf-hi').value),
+    tempLow: Number(document.getElementById('lf-lo').value),
+    rainfall: document.getElementById('lf-rain').value === 'true',
+    rainfallAmt: document.getElementById('lf-rainamt').value,
+    humidity: document.getElementById('lf-humidity').value,
+    succStage: Number(document.getElementById('lf-stage').value),
+    observations,
+    notes: document.getElementById('lf-notes').value,
+  };
+  const entries = getData('log_entries', []);
+  entries.push(entry);
+  setData('log_entries', entries);
+  closeModal('modal-log-entry');
+  showToast('Entry saved ✓');
+  renderLog();
+}
+
+function deleteLogEntry(id) {
+  if (!confirm('Delete this entry?')) return;
+  const entries = getData('log_entries', []).filter(e => e.id != id);
+  setData('log_entries', entries);
+  showToast('Entry deleted');
+  renderLog();
+}
+
+// ============================================================
+// POKÉDEX
+// ============================================================
+function renderPokedex() {
+  const species = getData('species', []);
+  document.getElementById('view-pokedex').innerHTML = `
+    <div class="header">
+      <div class="header-label">SPECIES POKÉDEX</div>
+      <div class="header-title">Field Identification</div>
+      <div class="header-sub">${species.length} species documented</div>
+    </div>
+    <div class="section">
+      <button class="btn btn-primary btn-full" style="margin-bottom:14px;" onclick="openSpeciesModal()">+ ADD NEW SPECIES</button>
+      <div class="alert alert-warn">⚠️ This is a field reference tool. Never consume any mushroom based solely on app ID. Always verify with multiple sources and an expert.</div>
+      ${species.length === 0 ? '<div class="empty">NO SPECIES DOCUMENTED</div>' : ''}
+      ${species.map(s => renderSpeciesCard(s)).join('')}
+    </div>
+  `;
+}
+
+function getToxicityClass(t) {
+  if (!t || t === 'none') return 'pill-green';
+  if (t === 'low') return 'pill-gold';
+  if (t.includes('HIGH')) return 'pill-red';
+  return 'pill-orange';
+}
+
+function getEdibilityClass(e) {
+  if (e === 'edible') return 'pill-green';
+  if (e === 'edible - caution') return 'pill-orange';
+  if (e === 'TOXIC') return 'pill-red';
+  return 'pill-gray';
+}
+
+function renderSpeciesCard(s) {
+  const id = 'sp_' + s.id;
+  return `
+    <div class="species-card">
+      <div class="species-card-header" onclick="toggle('${id}')">
+        <div class="species-dot" style="background:${s.color || '#8B7355'};"></div>
+        <div style="flex:1;">
+          <div class="species-name">${s.name}</div>
+          <div class="tiny dim">${s.commonName}</div>
+        </div>
+        <div class="flex gap-8 wrap">
+          <span class="pill ${getEdibilityClass(s.edibility)}" style="font-size:8px;">${s.edibility}</span>
+          ${s.psychoactive ? '<span class="pill pill-purple" style="font-size:8px;">🍄</span>' : ''}
+        </div>
+        <div class="collapse-arrow" id="${id}_arrow">▼</div>
+      </div>
+      <div class="collapse-body" id="${id}">
+        <div class="species-card-body">
+          ${s.photo ? `<img src="${s.photo}" style="width:100%;border-radius:4px;margin-bottom:10px;aspect-ratio:4/3;object-fit:cover;">` : ''}
+          <div class="flex gap-8 wrap" style="margin-bottom:10px;">
+            <span class="pill ${getToxicityClass(s.toxicity)}">${s.toxicity || 'none'}</span>
+            <span class="pill pill-gold">${s.guild}</span>
+            ${s.psychoactive ? '<span class="pill pill-purple">PSYCHOACTIVE</span>' : ''}
+            <span class="pill pill-gray">S${s.succStage}</span>
+          </div>
+          <div class="form-row" style="margin-bottom:8px;">
+            <div>
+              <div class="tiny dim">SUBSTRATE</div>
+              <div class="small" style="color:var(--gold2);margin-top:2px;">${s.substrate || '—'}</div>
+            </div>
+            <div>
+              <div class="tiny dim">FIRST SEEN</div>
+              <div class="small" style="color:var(--gold2);margin-top:2px;">${s.firstSeen ? formatDate(s.firstSeen) : '—'}</div>
+            </div>
+          </div>
+          ${s.locations?.length ? `
+            <div style="margin-bottom:8px;">
+              <div class="tiny dim" style="margin-bottom:4px;">LOCATIONS</div>
+              <div class="flex gap-8 wrap">${s.locations.map(l => `<span class="pill pill-gray">${l}</span>`).join('')}</div>
+            </div>
+          ` : ''}
+          ${s.notes ? `
+            <div style="margin-bottom:10px;">
+              <div class="tiny dim" style="margin-bottom:4px;">ECOLOGY NOTES</div>
+              <div class="small" style="color:var(--dim);line-height:1.6;">${s.notes}</div>
+            </div>
+          ` : ''}
+          <div style="margin-top:8px;">
+            <button class="btn btn-danger btn-sm" onclick="deleteSpecies(${s.id})">DELETE</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function openSpeciesModal() {
+  document.getElementById('modal-species-content').innerHTML = `
+    <div class="form-group">
+      <label class="form-label">SCIENTIFIC NAME</label>
+      <input class="form-input" id="sf-name" placeholder="e.g. Psilocybe cubensis">
+    </div>
+    <div class="form-group">
+      <label class="form-label">COMMON NAME</label>
+      <input class="form-input" id="sf-common" placeholder="e.g. Golden Teacher">
+    </div>
+    <div class="form-group">
+      <label class="form-label">PHOTO (optional)</label>
+      <div class="photo-box" onclick="document.getElementById('sf-photo-input').click()">
+        <img id="sf-photo-preview" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:4px;">
+        <div id="sf-photo-placeholder">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--dim)"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+          <div class="photo-box-label">TAP TO ADD PHOTO</div>
+        </div>
+      </div>
+      <input type="file" id="sf-photo-input" accept="image/*" style="display:none;" onchange="previewPhoto(this,'sf-photo-preview','sf-photo-placeholder')">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">EDIBILITY</label>
+        <select class="form-select" id="sf-edibility">
+          ${EDIBILITY.map(e => `<option>${e}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">TOXICITY</label>
+        <select class="form-select" id="sf-toxicity">
+          ${TOXICITY.map(t => `<option>${t}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">GUILD</label>
+        <select class="form-select" id="sf-guild">
+          ${GUILDS.map(g => `<option>${g}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">SUCC STAGE</label>
+        <select class="form-select" id="sf-stage">
+          ${[1,2,3,4].map(s => `<option value="${s}">${s}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">PSYCHOACTIVE?</label>
+      <select class="form-select" id="sf-psycho">
+        <option value="false">No</option>
+        <option value="true">Yes</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">SUBSTRATE</label>
+      <input class="form-input" id="sf-substrate" placeholder="e.g. Horse manure, Wood debris">
+    </div>
+    <div class="form-group">
+      <label class="form-label">FIRST SEEN DATE</label>
+      <input type="date" class="form-input" id="sf-first" value="${new Date().toISOString().split('T')[0]}">
+    </div>
+    <div class="form-group">
+      <label class="form-label">LOCATIONS ON PROPERTY</label>
+      <div id="sf-locs" style="display:flex;flex-wrap:wrap;gap:6px;">
+        ${LOCATIONS.map(l => `
+          <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+            <input type="checkbox" value="${l}" style="accent-color:var(--green2);"> <span class="tiny" style="color:var(--dim);">${l}</span>
+          </label>
+        `).join('')}
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">ECOLOGY NOTES</label>
+      <textarea class="form-textarea" id="sf-notes" placeholder="ID features, lookalikes, ecological role, behavior on this property..."></textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">COLOR (for dot indicator)</label>
+      <input type="color" id="sf-color" value="#8B7355" style="width:100%;height:40px;border:1px solid var(--border2);border-radius:4px;background:var(--bg2);">
+    </div>
+    <div class="flex gap-8">
+      <button class="btn btn-primary" style="flex:1;" onclick="saveSpecies()">SAVE TO POKÉDEX</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-species')">CANCEL</button>
+    </div>
+  `;
+  openModal('modal-species');
+}
+
+function previewPhoto(input, previewId, placeholderId) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const preview = document.getElementById(previewId);
+    const placeholder = document.getElementById(placeholderId);
+    preview.src = e.target.result;
+    preview.style.display = 'block';
+    if (placeholder) placeholder.style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+function saveSpecies() {
+  const name = document.getElementById('sf-name').value.trim();
+  if (!name) { showToast('Species name required'); return; }
+  const locs = [...document.querySelectorAll('#sf-locs input:checked')].map(c => c.value);
+  const photoInput = document.getElementById('sf-photo-input');
+  const preview = document.getElementById('sf-photo-preview');
+  const photo = preview && preview.src && preview.src.startsWith('data:') ? preview.src : null;
+  const species = getData('species', []);
+  species.push({
+    id: uid(),
+    name,
+    commonName: document.getElementById('sf-common').value,
+    edibility: document.getElementById('sf-edibility').value,
+    toxicity: document.getElementById('sf-toxicity').value,
+    guild: document.getElementById('sf-guild').value,
+    succStage: Number(document.getElementById('sf-stage').value),
+    psychoactive: document.getElementById('sf-psycho').value === 'true',
+    substrate: document.getElementById('sf-substrate').value,
+    firstSeen: document.getElementById('sf-first').value,
+    lastSeen: document.getElementById('sf-first').value,
+    locations: locs,
+    notes: document.getElementById('sf-notes').value,
+    color: document.getElementById('sf-color').value,
+    photo,
+  });
+  setData('species', species);
+  closeModal('modal-species');
+  showToast('Species added to Pokédex ✓');
+  renderPokedex();
+}
+
+function deleteSpecies(id) {
+  if (!confirm('Remove this species?')) return;
+  const species = getData('species', []).filter(s => s.id != id);
+  setData('species', species);
+  showToast('Species removed');
+  renderPokedex();
+}
+
+// ============================================================
+// HARVEST TRACKER
+// ============================================================
+function renderHarvest() {
+  const harvests = getData('harvests', []);
+  const sorted = [...harvests].sort((a,b) => b.date.localeCompare(a.date));
+
+  const totalWet = harvests.reduce((s,h) => s + Number(h.wetG||0), 0);
+  const totalDry = harvests.reduce((s,h) => s + Number(h.dryG||0), 0);
+  const totalPins = harvests.reduce((s,h) => s + Number(h.pinCount||0), 0);
+
+  // Monthly breakdown
+  const monthly = {};
+  harvests.forEach(h => {
+    const m = h.date?.slice(0,7);
+    if (!m) return;
+    if (!monthly[m]) monthly[m] = { wet: 0, dry: 0, count: 0 };
+    monthly[m].wet += Number(h.wetG||0);
+    monthly[m].dry += Number(h.dryG||0);
+    monthly[m].count++;
+  });
+
+  document.getElementById('view-harvest').innerHTML = `
+    <div class="header">
+      <div class="header-label">HARVEST TRACKER</div>
+      <div class="header-title">Psilocybe cubensis</div>
+      <div class="header-sub">Season 2025 · Wet & dry weights</div>
+    </div>
+    <div class="section">
+      <button class="btn btn-primary btn-full" style="margin-bottom:14px;" onclick="openHarvestModal()">+ LOG HARVEST</button>
+
+      <div class="stat-grid-3">
+        <div class="stat-box"><div class="stat-val orange">${totalWet.toFixed(1)}</div><div class="stat-lbl">WET (g)</div></div>
+        <div class="stat-box"><div class="stat-val purple">${totalDry.toFixed(1)}</div><div class="stat-lbl">DRY (g)</div></div>
+        <div class="stat-box"><div class="stat-val green">${totalPins}</div><div class="stat-lbl">PINS</div></div>
+      </div>
+
+      ${Object.keys(monthly).length > 0 ? `
+        <div class="section-title">MONTHLY BREAKDOWN</div>
+        ${Object.entries(monthly).sort().map(([m, d]) => `
+          <div class="card card-accent-orange">
+            <div class="flex-between">
+              <div class="small" style="color:var(--gold2);">${new Date(m+'-15').toLocaleDateString('en-US',{month:'long',year:'numeric'})}</div>
+              <div class="flex gap-8">
+                <span class="pill pill-orange">${d.wet.toFixed(1)}g wet</span>
+                <span class="pill pill-purple">${d.dry.toFixed(1)}g dry</span>
+              </div>
+            </div>
+            <div class="tiny dim" style="margin-top:4px;">${d.count} harvest session${d.count!==1?'s':''}</div>
+          </div>
+        `).join('')}
+      ` : ''}
+
+      <div class="section-title">HARVEST LOG</div>
+      ${sorted.length === 0 ? `
+        <div class="empty">NO HARVESTS YET<br><br>Cubensis window approaching.<br>Watch established manure zones.</div>
+      ` : sorted.map(h => renderHarvestEntry(h)).join('')}
+    </div>
+  `;
+}
+
+function renderHarvestEntry(h) {
+  const id = 'harv_' + h.id;
+  return `
+    <div class="card card-accent-green" style="margin-bottom:8px;">
+      <div class="collapse-header" onclick="toggle('${id}')">
+        <div style="flex:1;">
+          <div class="small" style="color:var(--gold2);">${formatDate(h.date)}</div>
+          <div class="tiny dim">${h.location} · ${h.flushNum ? 'Flush #'+h.flushNum : ''}</div>
+        </div>
+        <div class="flex gap-8">
+          <span class="pill pill-orange">${h.wetG}g wet</span>
+          ${h.dryG ? `<span class="pill pill-purple">${h.dryG}g dry</span>` : ''}
+        </div>
+        <div class="collapse-arrow" id="${id}_arrow">▼</div>
+      </div>
+      <div class="collapse-body" id="${id}">
+        <div style="padding-top:10px;">
+          <div class="form-row">
+            <div><div class="tiny dim">PINS COUNTED</div><div class="small gold3">${h.pinCount || '—'}</div></div>
+            <div><div class="tiny dim">CLUSTER SIZE</div><div class="small gold3">${h.clusterSize || '—'}</div></div>
+            <div><div class="tiny dim">WET WEIGHT</div><div class="small gold3">${h.wetG}g</div></div>
+            <div><div class="tiny dim">DRY WEIGHT</div><div class="small gold3">${h.dryG || '—'}g</div></div>
+          </div>
+          ${h.maturity ? `<div style="margin-top:6px;"><div class="tiny dim">MATURITY AT HARVEST</div><div class="small gold3">${h.maturity}</div></div>` : ''}
+          ${h.notes ? `<div class="divider"></div><div class="small dim" style="line-height:1.5;">${h.notes}</div>` : ''}
+          ${h.photo ? `<img src="${h.photo}" style="width:100%;border-radius:4px;margin-top:10px;aspect-ratio:4/3;object-fit:cover;">` : ''}
+          <button class="btn btn-danger btn-sm" style="margin-top:10px;" onclick="deleteHarvest('${h.id}')">DELETE</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function openHarvestModal() {
+  const harvests = getData('harvests', []);
+  const flushNums = harvests.map(h => Number(h.flushNum||0));
+  const nextFlush = flushNums.length ? Math.max(...flushNums) + 1 : 1;
+  document.getElementById('modal-harvest-content').innerHTML = `
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">DATE</label>
+        <input type="date" class="form-input" id="hf-date" value="${new Date().toISOString().split('T')[0]}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">FLUSH #</label>
+        <input type="number" class="form-input" id="hf-flush" value="${nextFlush}">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">LOCATION</label>
+      <select class="form-select" id="hf-loc">
+        ${LOCATIONS.map(l => `<option>${l}</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">PIN COUNT</label>
+        <input type="number" class="form-input" id="hf-pins" placeholder="# of pins">
+      </div>
+      <div class="form-group">
+        <label class="form-label">CLUSTER SIZE</label>
+        <select class="form-select" id="hf-cluster">
+          <option>small (1-5)</option><option>medium (6-15)</option><option>large (16-30)</option><option>massive (30+)</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">WET WEIGHT (g) *</label>
+        <input type="number" step="0.1" class="form-input" id="hf-wet" placeholder="0.0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">DRY WEIGHT (g)</label>
+        <input type="number" step="0.1" class="form-input" id="hf-dry" placeholder="0.0 (after drying)">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">MATURITY AT HARVEST</label>
+      <select class="form-select" id="hf-maturity">
+        <option>pins only</option><option>young - veil intact</option><option>optimal - veil just breaking</option><option>mature - veil open</option><option>sporing - veil fully open</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">PHOTO (optional)</label>
+      <div class="photo-box" onclick="document.getElementById('hf-photo-input').click()">
+        <img id="hf-photo-preview" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:4px;">
+        <div id="hf-photo-placeholder">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--dim)"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+          <div class="photo-box-label">TAP TO ADD PHOTO</div>
+        </div>
+      </div>
+      <input type="file" id="hf-photo-input" accept="image/*" style="display:none;" onchange="previewPhoto(this,'hf-photo-preview','hf-photo-placeholder')">
+    </div>
+    <div class="form-group">
+      <label class="form-label">NOTES</label>
+      <textarea class="form-textarea" id="hf-notes" placeholder="Substrate condition, weather context, veil color, anything notable..."></textarea>
+    </div>
+    <div class="flex gap-8">
+      <button class="btn btn-primary" style="flex:1;" onclick="saveHarvest()">SAVE HARVEST</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-harvest')">CANCEL</button>
+    </div>
+  `;
+  openModal('modal-harvest');
+}
+
+function saveHarvest() {
+  const wetG = document.getElementById('hf-wet').value;
+  if (!wetG) { showToast('Wet weight required'); return; }
+  const preview = document.getElementById('hf-photo-preview');
+  const photo = preview && preview.src && preview.src.startsWith('data:') ? preview.src : null;
+  const harvests = getData('harvests', []);
+  harvests.push({
+    id: uid(),
+    date: document.getElementById('hf-date').value,
+    flushNum: document.getElementById('hf-flush').value,
+    location: document.getElementById('hf-loc').value,
+    pinCount: document.getElementById('hf-pins').value,
+    clusterSize: document.getElementById('hf-cluster').value,
+    wetG: Number(wetG),
+    dryG: Number(document.getElementById('hf-dry').value || 0),
+    maturity: document.getElementById('hf-maturity').value,
+    notes: document.getElementById('hf-notes').value,
+    photo,
+  });
+  setData('harvests', harvests);
+  closeModal('modal-harvest');
+  showToast('Harvest logged ✓');
+  renderHarvest();
+}
+
+function deleteHarvest(id) {
+  if (!confirm('Delete harvest entry?')) return;
+  const harvests = getData('harvests', []).filter(h => h.id != id);
+  setData('harvests', harvests);
+  showToast('Deleted');
+  renderHarvest();
+}
+
+// ============================================================
+// CULTIVATION LAB
+// ============================================================
+function renderLab() {
+  const runs = getData('lab_runs', []);
+  const active = runs.filter(r => !['Harvest Complete','Failed'].includes(r.stage));
+  const completed = runs.filter(r => ['Harvest Complete','Failed'].includes(r.stage));
+
+  document.getElementById('view-lab').innerHTML = `
+    <div class="header">
+      <div class="header-label">CULTIVATION LAB</div>
+      <div class="header-title">Grow Experiments</div>
+      <div class="header-sub">${runs.length} runs total · ${active.length} active</div>
+    </div>
+    <div class="section">
+      <button class="btn btn-primary btn-full" style="margin-bottom:14px;" onclick="openLabModal()">+ NEW CULTIVATION RUN</button>
+
+      <div class="alert alert-info">
+        🔬 Track spore prints, agar work, grain spawn, and fruiting bodies. Log each stage as it progresses.
+      </div>
+
+      ${active.length > 0 ? `
+        <div class="section-title">ACTIVE RUNS (${active.length})</div>
+        ${active.map(r => renderLabRun(r)).join('')}
+      ` : '<div class="empty" style="padding:20px 0;">NO ACTIVE RUNS</div>'}
+
+      ${completed.length > 0 ? `
+        <div class="section-title" style="margin-top:14px;">COMPLETED / FAILED</div>
+        ${completed.map(r => renderLabRun(r)).join('')}
+      ` : ''}
+    </div>
+  `;
+}
+
+function renderLabRun(r) {
+  const id = 'lab_' + r.id;
+  const stageIdx = CULT_STAGES.indexOf(r.stage);
+  const pct = Math.round((stageIdx / (CULT_STAGES.length - 1)) * 100);
+  const isComplete = r.stage === 'Harvest Complete';
+  const isFailed = r.stage === 'Failed';
+  const accentClass = isFailed ? 'card-accent-red' : isComplete ? 'card-accent-green' : 'card-accent-purple';
+
+  return `
+    <div class="card ${accentClass}" style="margin-bottom:8px;">
+      <div class="collapse-header" onclick="toggle('${id}')">
+        <div style="flex:1;">
+          <div class="small" style="color:var(--gold2);font-weight:600;">${r.name}</div>
+          <div class="tiny dim">${r.method} · Started ${r.startDate ? formatDate(r.startDate) : '—'}</div>
+        </div>
+        <span class="pill ${isFailed ? 'pill-red' : isComplete ? 'pill-green' : 'pill-purple'}">${r.stage}</span>
+        <div class="collapse-arrow" id="${id}_arrow">▼</div>
+      </div>
+      <div style="margin-top:8px;height:3px;background:var(--border);border-radius:2px;">
+        <div style="height:100%;width:${pct}%;background:${isFailed ? 'var(--red2)' : 'var(--purple2)'};border-radius:2px;transition:width 0.4s;"></div>
+      </div>
+      <div class="collapse-body" id="${id}">
+        <div style="padding-top:12px;">
+          <div class="form-row" style="margin-bottom:10px;">
+            <div><div class="tiny dim">SOURCE</div><div class="small gold3">${r.source || '—'}</div></div>
+            <div><div class="tiny dim">STRAIN</div><div class="small gold3">${r.strain || '—'}</div></div>
+            <div><div class="tiny dim">CONTAINER</div><div class="small gold3">${r.container || '—'}</div></div>
+            <div><div class="tiny dim">INOCULATED</div><div class="small gold3">${r.innocDate ? formatDate(r.innocDate) : '—'}</div></div>
+          </div>
+
+          <div class="section-title">UPDATE STAGE</div>
+          <div class="cult-stage">
+            ${CULT_STAGES.map(s => `
+              <button class="cult-stage-btn ${r.stage === s ? 'active' : ''}" onclick="updateLabStage('${r.id}','${s}')">${s}</button>
+            `).join('')}
+          </div>
+
+          <div class="section-title">UPDATE LOG</div>
+          <div style="margin-bottom:8px;">
+            ${(r.updates||[]).slice().reverse().map(u => `
+              <div style="padding:6px 0;border-bottom:1px solid var(--border);">
+                <div class="tiny dim">${u.date ? formatDate(u.date) : ''} · <span style="color:var(--purple2);">${u.stage}</span></div>
+                <div class="small" style="color:var(--gold2);margin-top:2px;">${u.note}</div>
+              </div>
+            `).join('')}
+            ${!(r.updates||[]).length ? '<div class="tiny dim">No updates yet</div>' : ''}
+          </div>
+          <div class="form-row">
+            <input class="form-input" id="lab_note_${r.id}" placeholder="Add update note...">
+            <button class="btn btn-gold btn-sm" onclick="addLabUpdate('${r.id}')">LOG</button>
+          </div>
+
+          ${r.harvestWetG ? `
+            <div class="divider"></div>
+            <div class="flex gap-8">
+              <span class="pill pill-orange">${r.harvestWetG}g wet</span>
+              ${r.harvestDryG ? `<span class="pill pill-purple">${r.harvestDryG}g dry</span>` : ''}
+            </div>
+          ` : ''}
+
+          ${r.notes ? `<div class="divider"></div><div class="small dim" style="line-height:1.5;">${r.notes}</div>` : ''}
+
+          <div style="margin-top:10px;">
+            <button class="btn btn-danger btn-sm" onclick="deleteLabRun('${r.id}')">DELETE RUN</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function openLabModal() {
+  document.getElementById('modal-lab-content').innerHTML = `
+    <div class="form-group">
+      <label class="form-label">RUN NAME</label>
+      <input class="form-input" id="lb-name" placeholder="e.g. Wild Print #1 - Agar">
+    </div>
+    <div class="form-group">
+      <label class="form-label">METHOD</label>
+      <select class="form-select" id="lb-method">
+        ${CULT_METHODS.map(m => `<option>${m}</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">SOURCE</label>
+        <select class="form-select" id="lb-source">
+          <option>Wild specimen - property</option>
+          <option>Spore print - self collected</option>
+          <option>Spore syringe - self made</option>
+          <option>Agar culture - self made</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">STRAIN / ID</label>
+        <input class="form-input" id="lb-strain" placeholder="e.g. Wild FL #1">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">START DATE</label>
+        <input type="date" class="form-input" id="lb-start" value="${new Date().toISOString().split('T')[0]}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">INOCULATION DATE</label>
+        <input type="date" class="form-input" id="lb-innoc">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">CONTAINER / VESSEL</label>
+      <input class="form-input" id="lb-container" placeholder="e.g. 90mm petri dish, mason jar, tub">
+    </div>
+    <div class="form-group">
+      <label class="form-label">INITIAL STAGE</label>
+      <select class="form-select" id="lb-stage">
+        ${CULT_STAGES.slice(0,-2).map(s => `<option>${s}</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">NOTES</label>
+      <textarea class="form-textarea" id="lb-notes" placeholder="Substrate recipe, conditions, goals, observations..."></textarea>
+    </div>
+    <div class="flex gap-8">
+      <button class="btn btn-primary" style="flex:1;" onclick="saveLabRun()">CREATE RUN</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-lab')">CANCEL</button>
+    </div>
+  `;
+  openModal('modal-lab');
+}
+
+function saveLabRun() {
+  const name = document.getElementById('lb-name').value.trim();
+  if (!name) { showToast('Run name required'); return; }
+  const runs = getData('lab_runs', []);
+  runs.push({
+    id: uid(),
+    name,
+    method: document.getElementById('lb-method').value,
+    source: document.getElementById('lb-source').value,
+    strain: document.getElementById('lb-strain').value,
+    startDate: document.getElementById('lb-start').value,
+    innocDate: document.getElementById('lb-innoc').value,
+    container: document.getElementById('lb-container').value,
+    stage: document.getElementById('lb-stage').value,
+    notes: document.getElementById('lb-notes').value,
+    updates: [],
+  });
+  setData('lab_runs', runs);
+  closeModal('modal-lab');
+  showToast('Lab run created ✓');
+  renderLab();
+}
+
+function updateLabStage(id, stage) {
+  const runs = getData('lab_runs', []);
+  const run = runs.find(r => r.id == id);
+  if (run) {
+    run.stage = stage;
+    run.updates = run.updates || [];
+    run.updates.push({ date: new Date().toISOString().split('T')[0], stage, note: 'Stage updated to: ' + stage });
+  }
+  setData('lab_runs', runs);
+  showToast('Stage updated ✓');
+  renderLab();
+}
+
+function addLabUpdate(id) {
+  const note = document.getElementById('lab_note_' + id)?.value?.trim();
+  if (!note) return;
+  const runs = getData('lab_runs', []);
+  const run = runs.find(r => r.id == id);
+  if (run) {
+    run.updates = run.updates || [];
+    run.updates.push({ date: new Date().toISOString().split('T')[0], stage: run.stage, note });
+  }
+  setData('lab_runs', runs);
+  showToast('Update logged ✓');
+  renderLab();
+}
+
+function deleteLabRun(id) {
+  if (!confirm('Delete this cultivation run?')) return;
+  const runs = getData('lab_runs', []).filter(r => r.id != id);
+  setData('lab_runs', runs);
+  showToast('Run deleted');
+  renderLab();
+}
+
+// ============================================================
+// INIT
+// ============================================================
+initData();
+showView('dashboard');
+</script>
+</body>
+</html>
