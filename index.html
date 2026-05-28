@@ -713,9 +713,20 @@ function renderLogEntry(e) {
             </div>
           `).join('')}
           ${e.notes ? `<div class="divider"></div><div class="small dim" style="line-height:1.6;">${e.notes}</div>` : ''}
-          <div style="margin-top:10px;">
-            <button class="btn btn-danger btn-sm" onclick="deleteLogEntry(${e.id})">DELETE ENTRY</button>
+          <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-gold btn-sm" onclick="openEditLogModal('${e.id}')">✏️ EDIT</button>
+            <button class="btn btn-ghost btn-sm" onclick="openLogPhotoModal('${e.id}')">📷 ADD PHOTO</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteLogEntry('${e.id}')">DELETE</button>
           </div>
+          ${(e.photos||[]).length > 0 ? `
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">
+            ${(e.photos||[]).map((p,pi) => `
+              <div style="position:relative;">
+                <img src="${p}" style="width:80px;height:80px;object-fit:cover;border-radius:4px;border:1px solid var(--border);">
+                <button onclick="removeLogPhoto('${e.id}',${pi})" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.7);border:none;color:var(--red2);font-size:10px;cursor:pointer;border-radius:2px;padding:1px 4px;">✕</button>
+              </div>
+            `).join('')}
+          </div>` : ''}
         </div>
       </div>
     </div>
@@ -955,7 +966,9 @@ function renderSpeciesCard(s) {
               <div class="small" style="color:var(--dim);line-height:1.6;">${s.notes}</div>
             </div>
           ` : ''}
-          <div style="margin-top:8px;">
+          <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-gold btn-sm" onclick="openEditSpeciesModal('${s.id}')">✏️ EDIT</button>
+            <button class="btn btn-ghost btn-sm" onclick="openSpeciesPhotoModal('${s.id}')">📷 ADD PHOTO</button>
             <button class="btn btn-danger btn-sm" onclick="deleteSpecies(${s.id})">DELETE</button>
           </div>
         </div>
@@ -1527,6 +1540,348 @@ function deleteLabRun(id) {
   setData('lab_runs', runs);
   showToast('Run deleted');
   renderLab();
+}
+
+
+// ============================================================
+// EDIT LOG ENTRY
+// ============================================================
+function openEditLogModal(id) {
+  const entries = getData('log_entries', []);
+  const e = entries.find(x => x.id == id);
+  if (!e) return;
+  const species = getData('species', []);
+  const spNames = ['Panaeolus antillarum','Ink Cap (Coprinellus sp.)','Panaeolus papilionaceus','Bolbitius coprophilus','Conocybe sp. (Milky Cone Cap)','Chlorophyllum molybdites','Psilocybe cubensis','Unknown - needs ID',...species.map(s=>s.name)];
+  const unique = [...new Set(spNames)];
+
+  document.getElementById('modal-log-content').innerHTML = `
+    <div style="font-size:10px;color:var(--gold);font-family:'DM Mono',monospace;letter-spacing:2px;margin-bottom:12px;">EDITING ENTRY: ${formatDate(e.date)}</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">DATE</label>
+        <input type="date" class="form-input" id="lf-date" value="${e.date}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">SUCC STAGE</label>
+        <select class="form-select" id="lf-stage">
+          ${[1,2,3,4].map(s => `<option value="${s}" ${e.succStage==s?'selected':''}>${s} - ${SUCC_LABELS[s]}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">HIGH TEMP °F</label>
+        <input type="number" class="form-input" id="lf-hi" value="${e.tempHigh}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">LOW TEMP °F</label>
+        <input type="number" class="form-input" id="lf-lo" value="${e.tempLow}">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">RAINFALL</label>
+        <select class="form-select" id="lf-rain">
+          <option value="false" ${!e.rainfall?'selected':''}>No Rain</option>
+          <option value="true" ${e.rainfall?'selected':''}>Yes - Rain Today</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">AMOUNT</label>
+        <select class="form-select" id="lf-rainamt">
+          ${['none','light','moderate','heavy','storm'].map(a=>`<option ${e.rainfallAmt==a?'selected':''}>${a}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">HUMIDITY</label>
+      <select class="form-select" id="lf-humidity">
+        ${['low','moderate','high','extreme'].map(h=>`<option ${e.humidity==h?'selected':''}>${h}</option>`).join('')}
+      </select>
+    </div>
+    <div class="divider"></div>
+    <div class="flex-between" style="margin-bottom:10px;">
+      <div class="section-title" style="margin:0;">OBSERVATIONS</div>
+      <button class="btn btn-gold btn-sm" onclick="addObsRow()">+ ADD</button>
+    </div>
+    <div id="obs-rows">
+      ${(e.observations||[]).map(o => {
+        const rid = 'obs_' + uid();
+        return `<div id="${rid}" style="background:rgba(139,115,85,0.05);border:1px solid var(--border);border-radius:4px;padding:10px;margin-bottom:8px;">
+          <div class="form-row" style="margin-bottom:8px;">
+            <div>
+              <label class="form-label">SPECIES</label>
+              <select class="form-select" id="${rid}_sp">
+                ${unique.map(s=>`<option ${o.species==s?'selected':''}>${s}</option>`).join('')}
+                <option ${!unique.includes(o.species)?'selected':''}>Other / New Species</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">LOCATION</label>
+              <select class="form-select" id="${rid}_loc">
+                ${LOCATIONS.map(l=>`<option ${o.location==l?'selected':''}>${l}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div>
+              <label class="form-label">ABUNDANCE</label>
+              <select class="form-select" id="${rid}_ab">
+                ${ABUNDANCE.map(a=>`<option ${o.abundance==a?'selected':''}>${a}</option>`).join('')}
+              </select>
+            </div>
+            <div>
+              <label class="form-label">NOTES</label>
+              <input class="form-input" id="${rid}_notes" value="${o.notes||''}">
+            </div>
+          </div>
+          <button class="btn btn-danger btn-sm" style="margin-top:6px;" onclick="document.getElementById('${rid}').remove()">REMOVE</button>
+        </div>`;
+      }).join('')}
+    </div>
+    <div class="divider"></div>
+    <div class="form-group">
+      <label class="form-label">FIELD NOTES</label>
+      <textarea class="form-textarea" id="lf-notes">${e.notes||''}</textarea>
+    </div>
+    <div class="flex gap-8">
+      <button class="btn btn-primary" style="flex:1;" onclick="saveEditLogEntry('${id}')">SAVE CHANGES</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-log-entry')">CANCEL</button>
+    </div>
+  `;
+  openModal('modal-log-entry');
+}
+
+function saveEditLogEntry(id) {
+  const entries = getData('log_entries', []);
+  const idx = entries.findIndex(x => x.id == id);
+  if (idx === -1) return;
+  const rows = document.getElementById('obs-rows').children;
+  const observations = [];
+  for (let row of rows) {
+    const rid = row.id;
+    observations.push({
+      species: document.getElementById(rid+'_sp')?.value || '',
+      location: document.getElementById(rid+'_loc')?.value || '',
+      abundance: document.getElementById(rid+'_ab')?.value || '',
+      notes: document.getElementById(rid+'_notes')?.value || '',
+    });
+  }
+  entries[idx] = {
+    ...entries[idx],
+    date: document.getElementById('lf-date').value,
+    tempHigh: Number(document.getElementById('lf-hi').value),
+    tempLow: Number(document.getElementById('lf-lo').value),
+    rainfall: document.getElementById('lf-rain').value === 'true',
+    rainfallAmt: document.getElementById('lf-rainamt').value,
+    humidity: document.getElementById('lf-humidity').value,
+    succStage: Number(document.getElementById('lf-stage').value),
+    observations,
+    notes: document.getElementById('lf-notes').value,
+  };
+  setData('log_entries', entries);
+  closeModal('modal-log-entry');
+  showToast('Entry updated ✓');
+  renderLog();
+}
+
+// ============================================================
+// LOG ENTRY PHOTOS
+// ============================================================
+function openLogPhotoModal(id) {
+  document.getElementById('modal-log-content').innerHTML = `
+    <div style="font-size:10px;color:var(--gold);font-family:'DM Mono',monospace;letter-spacing:2px;margin-bottom:16px;">ADD PHOTO TO ENTRY</div>
+    <div class="photo-box" onclick="document.getElementById('lp-photo-input').click()" style="aspect-ratio:1;">
+      <img id="lp-photo-preview" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:4px;">
+      <div id="lp-photo-placeholder">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--dim)"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+        <div class="photo-box-label">TAP TO SELECT PHOTO</div>
+      </div>
+    </div>
+    <input type="file" id="lp-photo-input" accept="image/*" style="display:none;" onchange="previewPhoto(this,'lp-photo-preview','lp-photo-placeholder')">
+    <div class="form-group" style="margin-top:12px;">
+      <label class="form-label">PHOTO CAPTION (optional)</label>
+      <input class="form-input" id="lp-caption" placeholder="e.g. Flush #1 at hay area">
+    </div>
+    <div class="flex gap-8" style="margin-top:12px;">
+      <button class="btn btn-primary" style="flex:1;" onclick="saveLogPhoto('${id}')">SAVE PHOTO</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-log-entry')">CANCEL</button>
+    </div>
+  `;
+  openModal('modal-log-entry');
+}
+
+function saveLogPhoto(id) {
+  const preview = document.getElementById('lp-photo-preview');
+  if (!preview || !preview.src || !preview.src.startsWith('data:')) { showToast('Please select a photo'); return; }
+  const caption = document.getElementById('lp-caption')?.value || '';
+  const entries = getData('log_entries', []);
+  const idx = entries.findIndex(x => x.id == id);
+  if (idx === -1) return;
+  if (!entries[idx].photos) entries[idx].photos = [];
+  entries[idx].photos.push(preview.src);
+  setData('log_entries', entries);
+  closeModal('modal-log-entry');
+  showToast('Photo added ✓');
+  renderLog();
+}
+
+function removeLogPhoto(entryId, photoIdx) {
+  const entries = getData('log_entries', []);
+  const idx = entries.findIndex(x => x.id == entryId);
+  if (idx === -1) return;
+  entries[idx].photos = (entries[idx].photos||[]).filter((_,i) => i !== photoIdx);
+  setData('log_entries', entries);
+  showToast('Photo removed');
+  renderLog();
+}
+
+// ============================================================
+// EDIT SPECIES + ADD PHOTO TO EXISTING SPECIES
+// ============================================================
+function openSpeciesPhotoModal(id) {
+  const species = getData('species', []);
+  const sp = species.find(s => s.id == id);
+  if (!sp) return;
+  document.getElementById('modal-species-content').innerHTML = `
+    <div style="font-size:10px;color:var(--gold);font-family:'DM Mono',monospace;letter-spacing:2px;margin-bottom:8px;">ADD PHOTO: ${sp.name}</div>
+    ${sp.photo ? `<img src="${sp.photo}" style="width:100%;border-radius:4px;margin-bottom:10px;aspect-ratio:4/3;object-fit:cover;"><div class="tiny dim" style="margin-bottom:10px;">Current photo — uploading a new one will replace it</div>` : ''}
+    <div class="photo-box" onclick="document.getElementById('spp-photo-input').click()">
+      <img id="spp-photo-preview" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:4px;">
+      <div id="spp-photo-placeholder">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--dim)"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+        <div class="photo-box-label">TAP TO SELECT PHOTO</div>
+      </div>
+    </div>
+    <input type="file" id="spp-photo-input" accept="image/*" style="display:none;" onchange="previewPhoto(this,'spp-photo-preview','spp-photo-placeholder')">
+    <div class="flex gap-8" style="margin-top:16px;">
+      <button class="btn btn-primary" style="flex:1;" onclick="saveSpeciesPhoto(${id})">SAVE PHOTO</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-species')">CANCEL</button>
+    </div>
+  `;
+  openModal('modal-species');
+}
+
+function saveSpeciesPhoto(id) {
+  const preview = document.getElementById('spp-photo-preview');
+  if (!preview || !preview.src || !preview.src.startsWith('data:')) { showToast('Please select a photo'); return; }
+  const species = getData('species', []);
+  const idx = species.findIndex(s => s.id == id);
+  if (idx === -1) return;
+  species[idx].photo = preview.src;
+  setData('species', species);
+  closeModal('modal-species');
+  showToast('Photo saved ✓');
+  renderPokedex();
+}
+
+function openEditSpeciesModal(id) {
+  const species = getData('species', []);
+  const sp = species.find(s => s.id == id);
+  if (!sp) return;
+  document.getElementById('modal-species-content').innerHTML = `
+    <div style="font-size:10px;color:var(--gold);font-family:'DM Mono',monospace;letter-spacing:2px;margin-bottom:12px;">EDITING: ${sp.name}</div>
+    <div class="form-group">
+      <label class="form-label">SCIENTIFIC NAME</label>
+      <input class="form-input" id="sf-name" value="${sp.name||''}">
+    </div>
+    <div class="form-group">
+      <label class="form-label">COMMON NAME</label>
+      <input class="form-input" id="sf-common" value="${sp.commonName||''}">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">EDIBILITY</label>
+        <select class="form-select" id="sf-edibility">
+          ${EDIBILITY.map(e=>`<option ${sp.edibility==e?'selected':''}>${e}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">TOXICITY</label>
+        <select class="form-select" id="sf-toxicity">
+          ${TOXICITY.map(t=>`<option ${sp.toxicity==t?'selected':''}>${t}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">GUILD</label>
+        <select class="form-select" id="sf-guild">
+          ${GUILDS.map(g=>`<option ${sp.guild==g?'selected':''}>${g}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">SUCC STAGE</label>
+        <select class="form-select" id="sf-stage">
+          ${[1,2,3,4].map(s=>`<option value="${s}" ${sp.succStage==s?'selected':''}>${s}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">PSYCHOACTIVE?</label>
+      <select class="form-select" id="sf-psycho">
+        <option value="false" ${!sp.psychoactive?'selected':''}>No</option>
+        <option value="true" ${sp.psychoactive?'selected':''}>Yes</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">SUBSTRATE</label>
+      <input class="form-input" id="sf-substrate" value="${sp.substrate||''}">
+    </div>
+    <div class="form-group">
+      <label class="form-label">FIRST SEEN DATE</label>
+      <input type="date" class="form-input" id="sf-first" value="${sp.firstSeen||''}">
+    </div>
+    <div class="form-group">
+      <label class="form-label">LOCATIONS ON PROPERTY</label>
+      <div id="sf-locs" style="display:flex;flex-wrap:wrap;gap:6px;">
+        ${LOCATIONS.map(l=>`
+          <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+            <input type="checkbox" value="${l}" ${(sp.locations||[]).includes(l)?'checked':''} style="accent-color:var(--green2);"> <span class="tiny" style="color:var(--dim);">${l}</span>
+          </label>
+        `).join('')}
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">ECOLOGY NOTES</label>
+      <textarea class="form-textarea" id="sf-notes">${sp.notes||''}</textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">COLOR</label>
+      <input type="color" id="sf-color" value="${sp.color||'#8B7355'}" style="width:100%;height:40px;border:1px solid var(--border2);border-radius:4px;background:var(--bg2);">
+    </div>
+    <div class="flex gap-8">
+      <button class="btn btn-primary" style="flex:1;" onclick="saveEditSpecies(${id})">SAVE CHANGES</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-species')">CANCEL</button>
+    </div>
+  `;
+  openModal('modal-species');
+}
+
+function saveEditSpecies(id) {
+  const species = getData('species', []);
+  const idx = species.findIndex(s => s.id == id);
+  if (idx === -1) return;
+  const locs = [...document.querySelectorAll('#sf-locs input:checked')].map(c => c.value);
+  species[idx] = {
+    ...species[idx],
+    name: document.getElementById('sf-name').value.trim(),
+    commonName: document.getElementById('sf-common').value,
+    edibility: document.getElementById('sf-edibility').value,
+    toxicity: document.getElementById('sf-toxicity').value,
+    guild: document.getElementById('sf-guild').value,
+    succStage: Number(document.getElementById('sf-stage').value),
+    psychoactive: document.getElementById('sf-psycho').value === 'true',
+    substrate: document.getElementById('sf-substrate').value,
+    firstSeen: document.getElementById('sf-first').value,
+    locations: locs,
+    notes: document.getElementById('sf-notes').value,
+    color: document.getElementById('sf-color').value,
+  };
+  setData('species', species);
+  closeModal('modal-species');
+  showToast('Species updated ✓');
+  renderPokedex();
 }
 
 // ============================================================
