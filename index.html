@@ -677,11 +677,40 @@ function renderLog() {
   `;
 }
 
+function renderLogPhotos(e) {
+  if (!e.photos || e.photos.length === 0) return '';
+  let out = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">';
+  e.photos.forEach(function(p, pi) {
+    out += '<div style="position:relative;">';
+    out += '<img src="' + p + '" style="width:80px;height:80px;object-fit:cover;border-radius:4px;border:1px solid var(--border);">';
+    out += '<button onclick="removeLogPhoto('' + e.id + '',' + pi + ')" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.7);border:none;color:var(--red2);font-size:10px;cursor:pointer;border-radius:2px;padding:1px 4px;">✕</button>';
+    out += '</div>';
+  });
+  out += '</div>';
+  return out;
+}
+
+function renderLogObservations(e) {
+  if (!e.observations || e.observations.length === 0) return '';
+  let out = '';
+  e.observations.forEach(function(o) {
+    out += '<div style="padding:6px 0;border-bottom:1px solid var(--border);">';
+    out += '<div style="font-size:13px;color:var(--gold2);font-style:italic;">' + o.species + '</div>';
+    out += '<div class="small dim">' + o.location + ' · <span style="color:var(--green2);">' + o.abundance + '</span></div>';
+    if (o.notes) out += '<div class="tiny dim" style="margin-top:2px;">' + o.notes + '</div>';
+    out += '</div>';
+  });
+  return out;
+}
+
 function renderLogEntry(e) {
   const entries = getData('log_entries', []);
   const sorted = [...entries].sort((a,b) => a.date.localeCompare(b.date));
   const dayNum = sorted.findIndex(x => x.id === e.id) + 1;
   const id = 'log_' + e.id;
+  const rainPill = e.rainfall ? 'pill-blue' : 'pill-gray';
+  const rainText = e.rainfall ? '🌧️ ' + e.rainfallAmt : '☀️ No rain';
+  const sColor = SUCC_COLORS[e.succStage];
   return `
     <div class="log-entry">
       <div class="log-entry-header" onclick="toggle('${id}')">
@@ -691,9 +720,9 @@ function renderLogEntry(e) {
           <div class="log-obs">${(e.observations||[]).length} obs · Stage ${e.succStage}</div>
         </div>
         <div class="flex gap-8 wrap">
-          <span class="pill ${e.rainfall ? 'pill-blue' : 'pill-gray'}" style="font-size:9px;">${e.rainfall ? '🌧️' : '☀️'}</span>
+          <span class="pill ${rainPill}" style="font-size:9px;">${e.rainfall ? '🌧️' : '☀️'}</span>
           <span class="pill pill-gold" style="font-size:9px;">${e.tempHigh}°F</span>
-          <span class="pill" style="background:${SUCC_COLORS[e.succStage]}22;border:1px solid ${SUCC_COLORS[e.succStage]}44;color:${SUCC_COLORS[e.succStage]};font-size:9px;">S${e.succStage}</span>
+          <span class="pill" style="background:${sColor}22;border:1px solid ${sColor}44;color:${sColor};font-size:9px;">S${e.succStage}</span>
         </div>
         <div class="collapse-arrow" id="${id}_arrow">▼</div>
       </div>
@@ -701,32 +730,18 @@ function renderLogEntry(e) {
         <div style="padding:0 14px 14px;">
           <div class="flex gap-8 wrap" style="margin-bottom:10px;">
             <span class="pill pill-gold">🌡️ ${e.tempHigh}°/${e.tempLow}°F</span>
-            <span class="pill ${e.rainfall ? 'pill-blue' : 'pill-gray'}">${e.rainfall ? '🌧️ ' + e.rainfallAmt : '☀️ No rain'}</span>
+            <span class="pill ${rainPill}">${rainText}</span>
             <span class="pill pill-gold">💧 ${e.humidity}</span>
           </div>
           <div class="section-title">OBSERVATIONS</div>
-          ${(e.observations||[]).map(o => `
-            <div style="padding:6px 0;border-bottom:1px solid var(--border);">
-              <div style="font-size:13px;color:var(--gold2);font-style:italic;">${o.species}</div>
-              <div class="small dim">${o.location} · <span style="color:var(--green2);">${o.abundance}</span></div>
-              ${o.notes ? `<div class="tiny dim" style="margin-top:2px;">${o.notes}</div>` : ''}
-            </div>
-          `).join('')}
-          ${e.notes ? `<div class="divider"></div><div class="small dim" style="line-height:1.6;">${e.notes}</div>` : ''}
+          ${renderLogObservations(e)}
+          ${e.notes ? '<div class="divider"></div><div class="small dim" style="line-height:1.6;">' + e.notes + '</div>' : ''}
           <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
             <button class="btn btn-gold btn-sm" onclick="openEditLogModal('${e.id}')">✏️ EDIT</button>
             <button class="btn btn-ghost btn-sm" onclick="openLogPhotoModal('${e.id}')">📷 ADD PHOTO</button>
             <button class="btn btn-danger btn-sm" onclick="deleteLogEntry('${e.id}')">DELETE</button>
           </div>
-          ${(e.photos||[]).length > 0 ? `
-          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">
-            ${(e.photos||[]).map((p,pi) => `
-              <div style="position:relative;">
-                <img src="${p}" style="width:80px;height:80px;object-fit:cover;border-radius:4px;border:1px solid var(--border);">
-                <button onclick="removeLogPhoto('${e.id}',${pi})" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.7);border:none;color:var(--red2);font-size:10px;cursor:pointer;border-radius:2px;padding:1px 4px;">✕</button>
-              </div>
-            `).join('')}
-          </div>` : ''}
+          ${renderLogPhotos(e)}
         </div>
       </div>
     </div>
@@ -937,7 +952,7 @@ function renderSpeciesCard(s) {
       </div>
       <div class="collapse-body" id="${id}">
         <div class="species-card-body">
-          ${s.photo ? `<img src="${s.photo}" style="width:100%;border-radius:4px;margin-bottom:10px;aspect-ratio:4/3;object-fit:cover;">` : ''}
+          ${s.photo ? '<img src="' + s.photo + '" style="width:100%;border-radius:4px;margin-bottom:10px;aspect-ratio:4/3;object-fit:cover;">' : ''}
           <div class="flex gap-8 wrap" style="margin-bottom:10px;">
             <span class="pill ${getToxicityClass(s.toxicity)}">${s.toxicity || 'none'}</span>
             <span class="pill pill-gold">${s.guild}</span>
