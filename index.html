@@ -394,12 +394,28 @@
 // DATA STORE
 // ============================================================
 const DB = {
-  get(key) { try { return JSON.parse(localStorage.getItem('rtb_' + key) || 'null'); } catch(e) { return null; } },
-  set(key, val) { try { localStorage.setItem('rtb_' + key, JSON.stringify(val)); } catch(e) {} },
+  get(key) {
+    try {
+      return JSON.parse(localStorage.getItem('rtb_' + key) || 'null');
+    } catch(e) {
+      console.error('Storage read failed:', key, e);
+      return null;
+    }
+  },
+  set(key, val) {
+    try {
+      localStorage.setItem('rtb_' + key, JSON.stringify(val));
+      return true;
+    } catch(e) {
+      console.error('Storage save failed:', key, e);
+      alert('Storage is full. Your data was NOT saved. Try smaller photos, fewer photos, or clear old photos.');
+      return false;
+    }
+  },
 };
 
 function getData(key, def) { return DB.get(key) ?? def; }
-function setData(key, val) { DB.set(key, val); }
+function setData(key, val) { return DB.set(key, val); }
 
 // INITIAL SEED DATA
 function initData() {
@@ -452,6 +468,7 @@ function initData() {
 
     setData('harvests', []);
     setData('lab_runs', []);
+    setData('locations', LOCATIONS.filter(l => l !== 'Other'));
     setData('seeded', true);
   }
 }
@@ -499,6 +516,105 @@ const LOCATIONS = [
 ];
 
 const ABUNDANCE = ['first appearance','solitary','few','several','clusters','massive clusters','fading','gone'];
+
+// ============================================================
+// DYNAMIC LOCATIONS + CUSTOM FIELD HELPERS
+// ============================================================
+function getLocations() {
+  const saved = getData('locations', null);
+  if (Array.isArray(saved) && saved.length) return saved;
+  const base = LOCATIONS.filter(l => l !== 'Other');
+  setData('locations', base);
+  return base;
+}
+
+function addLocation(name) {
+  name = (name || '').trim();
+  if (!name) return '';
+  const locations = getLocations();
+  const exists = locations.some(l => l.toLowerCase() === name.toLowerCase());
+  if (!exists) {
+    locations.push(name);
+    locations.sort((a,b) => a.localeCompare(b));
+    setData('locations', locations);
+  }
+  return name;
+}
+
+function escapeHtml(str) {
+  return String(str ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+}
+
+function toggleOtherInput(selectEl, inputId) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  const isOther = selectEl && (selectEl.value === 'Other' || selectEl.value === 'Other / New Species');
+  input.style.display = isOther ? 'block' : 'none';
+  if (isOther) setTimeout(() => input.focus(), 30);
+}
+
+function getSelectOrCustom(baseId, otherValue) {
+  const select = document.getElementById(baseId);
+  const custom = document.getElementById(baseId + '_custom');
+  if (!select) return '';
+  if (select.value === otherValue) return (custom?.value || '').trim();
+  return select.value || '';
+}
+
+function getSpeciesOptions(selected) {
+  const species = getData('species', []);
+  const spNames = [
+    'Panaeolus antillarum','Ink Cap (Coprinellus sp.)','Panaeolus papilionaceus',
+    'Bolbitius coprophilus','Conocybe sp. (Milky Cone Cap)','Chlorophyllum molybdites',
+    'Psilocybe cubensis','Unknown - needs ID', ...species.map(s => s.name)
+  ].filter(Boolean);
+  const unique = [...new Set(spNames)];
+  const hasSelected = selected && unique.includes(selected);
+  return unique.map(s => `<option ${selected === s ? 'selected' : ''}>${escapeHtml(s)}</option>`).join('') +
+    `<option ${selected && !hasSelected ? 'selected' : ''}>Other / New Species</option>`;
+}
+
+function getLocationOptions(selected) {
+  const locations = getLocations();
+  const hasSelected = selected && locations.includes(selected);
+  return locations.map(l => `<option ${selected === l ? 'selected' : ''}>${escapeHtml(l)}</option>`).join('') +
+    `<option ${selected && !hasSelected ? 'selected' : ''}>Other</option>`;
+}
+
+function getCheckedSpeciesLocations() {
+  const checked = [...document.querySelectorAll('#sf-locs input[type="checkbox"]:checked')].map(c => c.value);
+  const customLoc = (document.getElementById('sf-new-location')?.value || '').trim();
+  if (customLoc) checked.push(addLocation(customLoc));
+  return [...new Set(checked.filter(Boolean))];
+}
+
+function ensureSpeciesExistsFromLog(name, locationName, date) {
+  name = (name || '').trim();
+  if (!name || name === 'Unknown - needs ID' || name === 'Other / New Species') return;
+  const species = getData('species', []);
+  const exists = species.some(s => (s.name || '').toLowerCase() === name.toLowerCase());
+  if (exists) return;
+  const locs = locationName ? [locationName] : [];
+  species.push({
+    id: uid(),
+    name,
+    commonName: '',
+    edibility: 'unknown',
+    toxicity: 'none',
+    guild: 'unknown',
+    succStage: 1,
+    psychoactive: false,
+    substrate: '',
+    firstSeen: date || new Date().toISOString().split('T')[0],
+    lastSeen: date || new Date().toISOString().split('T')[0],
+    locations: locs,
+    notes: 'Created automatically from a Daily Log entry. Edit this species in the Shroomadex to add full ID details.',
+    color: '#8B7355',
+    photo: null,
+  });
+  setData('species', species);
+}
+
 
 const EDIBILITY = ['edible','edible - caution','inedible','TOXIC','unknown'];
 const TOXICITY = ['none','low','moderate','HIGH - GI','HIGH - amatoxins','HIGH - other'];
@@ -683,7 +799,7 @@ function renderLogPhotos(e) {
   e.photos.forEach(function(p, pi) {
     out += '<div style="position:relative;">';
     out += '<img src="' + p + '" style="width:80px;height:80px;object-fit:cover;border-radius:4px;border:1px solid var(--border);">';
-    out += '<button onclick="removeLogPhoto('' + e.id + '',' + pi + ')" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.7);border:none;color:var(--red2);font-size:10px;cursor:pointer;border-radius:2px;padding:1px 4px;">✕</button>';
+    out += '<button onclick="removeLogPhoto(\'' + e.id + '\',' + pi + ')" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.7);border:none;color:var(--red2);font-size:10px;cursor:pointer;border-radius:2px;padding:1px 4px;">✕</button>';
     out += '</div>';
   });
   out += '</div>';
@@ -818,9 +934,6 @@ function openLogModal() {
 }
 
 function addObsRow() {
-  const species = getData('species', []);
-  const spNames = ['Panaeolus antillarum','Ink Cap (Coprinellus sp.)','Panaeolus papilionaceus','Bolbitius coprophilus','Conocybe sp. (Milky Cone Cap)','Chlorophyllum molybdites','Psilocybe cubensis','Unknown - needs ID',...species.map(s=>s.name)];
-  const unique = [...new Set(spNames)];
   const id = 'obs_' + uid();
   const row = document.createElement('div');
   row.id = id;
@@ -829,23 +942,24 @@ function addObsRow() {
     <div class="form-row" style="margin-bottom:8px;">
       <div>
         <label class="form-label">SPECIES</label>
-        <select class="form-select" id="${id}_sp">
-          ${unique.map(s => `<option>${s}</option>`).join('')}
-          <option>Other / New Species</option>
+        <select class="form-select" id="${id}_sp" onchange="toggleOtherInput(this,'${id}_sp_custom')">
+          ${getSpeciesOptions('')}
         </select>
+        <input class="form-input" id="${id}_sp_custom" placeholder="Type new species name" style="display:none;margin-top:6px;">
       </div>
       <div>
         <label class="form-label">LOCATION</label>
-        <select class="form-select" id="${id}_loc">
-          ${LOCATIONS.map(l => `<option>${l}</option>`).join('')}
+        <select class="form-select" id="${id}_loc" onchange="toggleOtherInput(this,'${id}_loc_custom')">
+          ${getLocationOptions('')}
         </select>
+        <input class="form-input" id="${id}_loc_custom" placeholder="Type new location" style="display:none;margin-top:6px;">
       </div>
     </div>
     <div class="form-row">
       <div>
         <label class="form-label">ABUNDANCE</label>
         <select class="form-select" id="${id}_ab">
-          ${ABUNDANCE.map(a => `<option>${a}</option>`).join('')}
+          ${ABUNDANCE.map(a => `<option>${escapeHtml(a)}</option>`).join('')}
         </select>
       </div>
       <div>
@@ -865,9 +979,13 @@ function saveLogEntry() {
   const observations = [];
   for (let row of rows) {
     const id = row.id;
+    const speciesName = getSelectOrCustom(id + '_sp', 'Other / New Species');
+    const locationName = getSelectOrCustom(id + '_loc', 'Other');
+    if (locationName) addLocation(locationName);
+    ensureSpeciesExistsFromLog(speciesName, locationName, date);
     observations.push({
-      species: document.getElementById(id+'_sp')?.value || '',
-      location: document.getElementById(id+'_loc')?.value || '',
+      species: speciesName,
+      location: locationName,
       abundance: document.getElementById(id+'_ab')?.value || '',
       notes: document.getElementById(id+'_notes')?.value || '',
     });
@@ -886,7 +1004,7 @@ function saveLogEntry() {
   };
   const entries = getData('log_entries', []);
   entries.push(entry);
-  setData('log_entries', entries);
+  if (!setData('log_entries', entries)) return;
   closeModal('modal-log-entry');
   showToast('Entry saved ✓');
   renderLog();
@@ -895,7 +1013,7 @@ function saveLogEntry() {
 function deleteLogEntry(id) {
   if (!confirm('Delete this entry?')) return;
   const entries = getData('log_entries', []).filter(e => e.id != id);
-  setData('log_entries', entries);
+  if (!setData('log_entries', entries)) return;
   showToast('Entry deleted');
   renderLog();
 }
@@ -984,7 +1102,7 @@ function renderSpeciesCard(s) {
           <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">
             <button class="btn btn-gold btn-sm" onclick="openEditSpeciesModal('${s.id}')">✏️ EDIT</button>
             <button class="btn btn-ghost btn-sm" onclick="openSpeciesPhotoModal('${s.id}')">📷 ADD PHOTO</button>
-            <button class="btn btn-danger btn-sm" onclick="deleteSpecies(${s.id})">DELETE</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteSpecies('${s.id}')">DELETE</button>
           </div>
         </div>
       </div>
@@ -1059,12 +1177,13 @@ function openSpeciesModal() {
     <div class="form-group">
       <label class="form-label">LOCATIONS ON PROPERTY</label>
       <div id="sf-locs" style="display:flex;flex-wrap:wrap;gap:6px;">
-        ${LOCATIONS.map(l => `
+        ${getLocations().map(l => `
           <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
             <input type="checkbox" value="${l}" style="accent-color:var(--green2);"> <span class="tiny" style="color:var(--dim);">${l}</span>
           </label>
         `).join('')}
       </div>
+      <input class="form-input" id="sf-new-location" placeholder="Add a new location, then save" style="margin-top:8px;">
     </div>
     <div class="form-group">
       <label class="form-label">ECOLOGY NOTES</label>
@@ -1085,13 +1204,31 @@ function openSpeciesModal() {
 function previewPhoto(input, previewId, placeholderId) {
   const file = input.files[0];
   if (!file) return;
+
   const reader = new FileReader();
   reader.onload = e => {
-    const preview = document.getElementById(previewId);
-    const placeholder = document.getElementById(placeholderId);
-    preview.src = e.target.result;
-    preview.style.display = 'block';
-    if (placeholder) placeholder.style.display = 'none';
+    const img = new Image();
+    img.onload = () => {
+      const maxSide = 900;
+      let { width, height } = img;
+      const scale = Math.min(1, maxSide / Math.max(width, height));
+      width = Math.round(width * scale);
+      height = Math.round(height * scale);
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+
+      const compressed = canvas.toDataURL('image/jpeg', 0.72);
+      const preview = document.getElementById(previewId);
+      const placeholder = document.getElementById(placeholderId);
+      preview.src = compressed;
+      preview.style.display = 'block';
+      if (placeholder) placeholder.style.display = 'none';
+    };
+    img.src = e.target.result;
   };
   reader.readAsDataURL(file);
 }
@@ -1099,8 +1236,7 @@ function previewPhoto(input, previewId, placeholderId) {
 function saveSpecies() {
   const name = document.getElementById('sf-name').value.trim();
   if (!name) { showToast('Species name required'); return; }
-  const locs = [...document.querySelectorAll('#sf-locs input:checked')].map(c => c.value);
-  const photoInput = document.getElementById('sf-photo-input');
+  const locs = getCheckedSpeciesLocations();
   const preview = document.getElementById('sf-photo-preview');
   const photo = preview && preview.src && preview.src.startsWith('data:') ? preview.src : null;
   const species = getData('species', []);
@@ -1121,7 +1257,7 @@ function saveSpecies() {
     color: document.getElementById('sf-color').value,
     photo,
   });
-  setData('species', species);
+  if (!setData('species', species)) return;
   closeModal('modal-species');
   showToast('Species added to Shroomadex ✓');
   renderShroomadex();
@@ -1130,7 +1266,7 @@ function saveSpecies() {
 function deleteSpecies(id) {
   if (!confirm('Remove this species?')) return;
   const species = getData('species', []).filter(s => s.id != id);
-  setData('species', species);
+  if (!setData('species', species)) return;
   showToast('Species removed');
   renderShroomadex();
 }
@@ -1247,7 +1383,7 @@ function openHarvestModal() {
     <div class="form-group">
       <label class="form-label">LOCATION</label>
       <select class="form-select" id="hf-loc">
-        ${LOCATIONS.map(l => `<option>${l}</option>`).join('')}
+        ${getLocations().map(l => `<option>${l}</option>`).join('')}
       </select>
     </div>
     <div class="form-row">
@@ -1626,16 +1762,17 @@ function openEditLogModal(id) {
           <div class="form-row" style="margin-bottom:8px;">
             <div>
               <label class="form-label">SPECIES</label>
-              <select class="form-select" id="${rid}_sp">
-                ${unique.map(s=>`<option ${o.species==s?'selected':''}>${s}</option>`).join('')}
-                <option ${!unique.includes(o.species)?'selected':''}>Other / New Species</option>
+              <select class="form-select" id="${rid}_sp" onchange="toggleOtherInput(this,'${rid}_sp_custom')">
+                ${getSpeciesOptions(o.species)}
               </select>
+              <input class="form-input" id="${rid}_sp_custom" value="${!unique.includes(o.species) ? escapeHtml(o.species || '') : ''}" placeholder="Type new species name" style="${!unique.includes(o.species) ? 'display:block;' : 'display:none;'}margin-top:6px;">
             </div>
             <div>
               <label class="form-label">LOCATION</label>
-              <select class="form-select" id="${rid}_loc">
-                ${LOCATIONS.map(l=>`<option ${o.location==l?'selected':''}>${l}</option>`).join('')}
+              <select class="form-select" id="${rid}_loc" onchange="toggleOtherInput(this,'${rid}_loc_custom')">
+                ${getLocationOptions(o.location)}
               </select>
+              <input class="form-input" id="${rid}_loc_custom" value="${!getLocations().includes(o.location) ? escapeHtml(o.location || '') : ''}" placeholder="Type new location" style="${!getLocations().includes(o.location) ? 'display:block;' : 'display:none;'}margin-top:6px;">
             </div>
           </div>
           <div class="form-row">
@@ -1675,9 +1812,13 @@ function saveEditLogEntry(id) {
   const observations = [];
   for (let row of rows) {
     const rid = row.id;
+    const speciesName = getSelectOrCustom(rid + '_sp', 'Other / New Species');
+    const locationName = getSelectOrCustom(rid + '_loc', 'Other');
+    if (locationName) addLocation(locationName);
+    ensureSpeciesExistsFromLog(speciesName, locationName, document.getElementById('lf-date')?.value);
     observations.push({
-      species: document.getElementById(rid+'_sp')?.value || '',
-      location: document.getElementById(rid+'_loc')?.value || '',
+      species: speciesName,
+      location: locationName,
       abundance: document.getElementById(rid+'_ab')?.value || '',
       notes: document.getElementById(rid+'_notes')?.value || '',
     });
@@ -1694,7 +1835,7 @@ function saveEditLogEntry(id) {
     observations,
     notes: document.getElementById('lf-notes').value,
   };
-  setData('log_entries', entries);
+  if (!setData('log_entries', entries)) return;
   closeModal('modal-log-entry');
   showToast('Entry updated ✓');
   renderLog();
@@ -1735,7 +1876,7 @@ function saveLogPhoto(id) {
   if (idx === -1) return;
   if (!entries[idx].photos) entries[idx].photos = [];
   entries[idx].photos.push(preview.src);
-  setData('log_entries', entries);
+  if (!setData('log_entries', entries)) return;
   closeModal('modal-log-entry');
   showToast('Photo added ✓');
   renderLog();
@@ -1746,7 +1887,7 @@ function removeLogPhoto(entryId, photoIdx) {
   const idx = entries.findIndex(x => x.id == entryId);
   if (idx === -1) return;
   entries[idx].photos = (entries[idx].photos||[]).filter((_,i) => i !== photoIdx);
-  setData('log_entries', entries);
+  if (!setData('log_entries', entries)) return;
   showToast('Photo removed');
   renderLog();
 }
@@ -1770,7 +1911,7 @@ function openSpeciesPhotoModal(id) {
     </div>
     <input type="file" id="spp-photo-input" accept="image/*" style="display:none;" onchange="previewPhoto(this,'spp-photo-preview','spp-photo-placeholder')">
     <div class="flex gap-8" style="margin-top:16px;">
-      <button class="btn btn-primary" style="flex:1;" onclick="saveSpeciesPhoto(${id})">SAVE PHOTO</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="saveSpeciesPhoto('${id}')">SAVE PHOTO</button>
       <button class="btn btn-ghost" onclick="closeModal('modal-species')">CANCEL</button>
     </div>
   `;
@@ -1784,10 +1925,10 @@ function saveSpeciesPhoto(id) {
   const idx = species.findIndex(s => s.id == id);
   if (idx === -1) return;
   species[idx].photo = preview.src;
-  setData('species', species);
+  if (!setData('species', species)) return;
   closeModal('modal-species');
   showToast('Photo saved ✓');
-  renderPokedex();
+  renderShroomadex();
 }
 
 function openEditSpeciesModal(id) {
@@ -1850,12 +1991,13 @@ function openEditSpeciesModal(id) {
     <div class="form-group">
       <label class="form-label">LOCATIONS ON PROPERTY</label>
       <div id="sf-locs" style="display:flex;flex-wrap:wrap;gap:6px;">
-        ${LOCATIONS.map(l=>`
+        ${getLocations().map(l=>`
           <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
             <input type="checkbox" value="${l}" ${(sp.locations||[]).includes(l)?'checked':''} style="accent-color:var(--green2);"> <span class="tiny" style="color:var(--dim);">${l}</span>
           </label>
         `).join('')}
       </div>
+      <input class="form-input" id="sf-new-location" placeholder="Add a new location, then save" style="margin-top:8px;">
     </div>
     <div class="form-group">
       <label class="form-label">ECOLOGY NOTES</label>
@@ -1866,7 +2008,7 @@ function openEditSpeciesModal(id) {
       <input type="color" id="sf-color" value="${sp.color||'#8B7355'}" style="width:100%;height:40px;border:1px solid var(--border2);border-radius:4px;background:var(--bg2);">
     </div>
     <div class="flex gap-8">
-      <button class="btn btn-primary" style="flex:1;" onclick="saveEditSpecies(${id})">SAVE CHANGES</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="saveEditSpecies('${id}')">SAVE CHANGES</button>
       <button class="btn btn-ghost" onclick="closeModal('modal-species')">CANCEL</button>
     </div>
   `;
@@ -1877,7 +2019,7 @@ function saveEditSpecies(id) {
   const species = getData('species', []);
   const idx = species.findIndex(s => s.id == id);
   if (idx === -1) return;
-  const locs = [...document.querySelectorAll('#sf-locs input:checked')].map(c => c.value);
+  const locs = getCheckedSpeciesLocations();
   species[idx] = {
     ...species[idx],
     name: document.getElementById('sf-name').value.trim(),
@@ -1893,10 +2035,10 @@ function saveEditSpecies(id) {
     notes: document.getElementById('sf-notes').value,
     color: document.getElementById('sf-color').value,
   };
-  setData('species', species);
+  if (!setData('species', species)) return;
   closeModal('modal-species');
   showToast('Species updated ✓');
-  renderPokedex();
+  renderShroomadex();
 }
 
 // ============================================================
