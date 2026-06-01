@@ -955,6 +955,32 @@ function saveLogEntry() {
     const speciesName = getSelectOrCustom(id + '_sp', 'Other / New Species');
     const locationName = getSelectOrCustom(id + '_loc', 'Other');
     if (locationName) addLocation(locationName);
+
+    if (speciesName) {
+      const speciesList = getData('species', []);
+      const exists = speciesList.some(s => (s.name || '').toLowerCase() === speciesName.toLowerCase());
+      if (!exists && speciesName !== 'Unknown - needs ID') {
+        speciesList.push({
+          id: uid(),
+          name: speciesName,
+          commonName: '',
+          edibility: 'unknown',
+          toxicity: 'none',
+          guild: 'unknown',
+          succStage: 1,
+          psychoactive: false,
+          substrate: '',
+          firstSeen: date,
+          lastSeen: date,
+          locations: locationName ? [locationName] : [],
+          notes: 'Created automatically from Daily Log',
+          color: '#8B7355',
+          photo: null
+        });
+        setData('species', speciesList);
+      }
+    }
+
     observations.push({
       species: speciesName,
       location: locationName,
