@@ -574,7 +574,7 @@ function openLogPhotoModal(id) {
     '<img id="lp-preview" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:4px;">'+
     '<div id="lp-placeholder"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--dim)"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>'+
     '<div class="photo-box-label">TAP TO SELECT PHOTO</div></div></div>'+
-    '<input type="file" id="lp-input" accept="image/*" style="display:none;" onchange="compressAndPreview(this,\'lp-preview\',\'lp-placeholder\') ">'+
+    '<input type="file" id="lp-input" accept="image/*" style="display:none;" onchange="compressAndPreview(this,\'lp-preview\',\'lp-placeholder\')">'+
     '<div class="flex gap-8" style="margin-top:12px;"><button class="btn btn-primary" style="flex:1;" id="log-photo-save-btn">SAVE PHOTO</button><button class="btn btn-ghost" onclick="closeModal(\'modal-log-entry\')">CANCEL</button></div>';
   document.getElementById('log-photo-save-btn').addEventListener('click', function(){ saveLogPhoto(id); });
   openModal("modal-log-entry");
@@ -670,7 +670,7 @@ function buildSpeciesForm(s) {
   out+='<div class="form-group"><label class="form-label">COMMON NAME</label><input class="form-input" id="sf-common" value="'+(s?s.commonName||"":"")+'"></div>';
   out+='<div class="photo-box" onclick="document.getElementById(\'sf-photo-input\').click()"><img id="sf-photo-preview" style="display:'+(s&&s.photo?"block":"none")+';width:100%;height:100%;object-fit:cover;border-radius:4px;"'+(s&&s.photo?' src="'+s.photo+'"':"")+'>'+
     '<div id="sf-photo-placeholder" style="display:'+(s&&s.photo?"none":"flex")+';flex-direction:column;align-items:center;gap:6px;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--dim)"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><div class="photo-box-label">TAP TO ADD PHOTO</div></div></div>';
-  out+='<input type="file" id="sf-photo-input" accept="image/*" style="display:none;" onchange="compressAndPreview(this,\'sf-photo-preview\',\'sf-photo-placeholder\') ">';
+  out+='<input type="file" id="sf-photo-input" accept="image/*" style="display:none;" onchange="compressAndPreview(this,\'sf-photo-preview\',\'sf-photo-placeholder\')">';
   out+='<div class="form-row"><div class="form-group"><label class="form-label">EDIBILITY</label><select class="form-select" id="sf-edibility">';
   EDIBILITY.forEach(function(e2){out+='<option'+(s&&s.edibility===e2?" selected":"")+'>'+e2+'</option>';});
   out+='</select></div><div class="form-group"><label class="form-label">TOXICITY</label><select class="form-select" id="sf-toxicity">';
@@ -765,7 +765,7 @@ function openSpeciesPhotoModal(id) {
   var html='';
   if(sp.photo) html+='<img src="'+sp.photo+'" style="width:100%;border-radius:4px;margin-bottom:10px;aspect-ratio:4/3;object-fit:cover;"><div style="font-size:9px;color:var(--dim);margin-bottom:10px;">Current photo - new upload replaces it</div>';
   html+='<div class="photo-box" onclick="document.getElementById(\'spp-input\').click()"><img id="spp-preview" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:4px;"><div id="spp-placeholder"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--dim)"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><div class="photo-box-label">TAP TO SELECT PHOTO</div></div></div>';
-  html+='<input type="file" id="spp-input" accept="image/*" style="display:none;" onchange="compressAndPreview(this,\'spp-preview\',\'spp-placeholder\') ">';
+  html+='<input type="file" id="spp-input" accept="image/*" style="display:none;" onchange="compressAndPreview(this,\'spp-preview\',\'spp-placeholder\')">';
   html+='<div class="flex gap-8" style="margin-top:16px;"><button class="btn btn-primary" style="flex:1;" id="sp-photo-save-btn">SAVE PHOTO</button><button class="btn btn-ghost" onclick="closeModal(\'modal-species\')">CANCEL</button></div>';
   document.getElementById('sp-photo-save-btn').addEventListener('click', function(){ saveSpeciesPhoto(id); });
   document.getElementById("modal-species-content").innerHTML=html;
@@ -851,7 +851,7 @@ function openHarvestModal() {
   html+='<div class="form-group"><label class="form-label">DRY WEIGHT (g)</label><input type="number" step="0.1" class="form-input" id="hf-dry" placeholder="after drying"></div></div>';
   html+='<div class="form-group"><label class="form-label">MATURITY AT HARVEST</label><select class="form-select" id="hf-maturity"><option>pins only</option><option>young - veil intact</option><option>optimal - veil just breaking</option><option>mature - veil open</option><option>sporing - veil fully open</option></select></div>';
   html+='<div class="photo-box" onclick="document.getElementById(\'hf-photo-input\').click()"><img id="hf-preview" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:4px;"><div id="hf-placeholder"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--dim)"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><div class="photo-box-label">TAP TO ADD PHOTO</div></div></div>';
-  html+='<input type="file" id="hf-photo-input" accept="image/*" style="display:none;" onchange="compressAndPreview(this,\'hf-preview\',\'hf-placeholder\') ">';
+  html+='<input type="file" id="hf-photo-input" accept="image/*" style="display:none;" onchange="compressAndPreview(this,\'hf-preview\',\'hf-placeholder\')">';
   html+='<div class="form-group"><label class="form-label">NOTES</label><textarea class="form-textarea" id="hf-notes" placeholder="substrate, weather, observations..."></textarea></div>';
   html+='<div class="flex gap-8"><button class="btn btn-primary" style="flex:1;" onclick="saveHarvest()">SAVE HARVEST</button><button class="btn btn-ghost" onclick="closeModal(\'modal-harvest\')">CANCEL</button></div>';
   document.getElementById("modal-harvest-content").innerHTML=html;
