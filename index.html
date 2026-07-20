@@ -724,12 +724,21 @@ function openSpeciesModal() {
 
 function saveSpecies() {
   var data=getSpeciesFromForm(null);
+  console.log("saveSpecies called, name:", data.name, "photo:", data.photo ? "YES ("+data.photo.length+" chars)" : "none");
   if(!data.name){showToast("Name required");return;}
   var species=getData("species",[]);
-  species.push(Object.assign({id:uid(),lastSeen:""},data));
-  setData("species",species);
+  var newSp = Object.assign({id:uid(),lastSeen:""},data);
+  species.push(newSp);
+  try {
+    setData("species",species);
+    console.log("setData succeeded, species count:", species.length);
+  } catch(err) {
+    console.error("setData FAILED:", err);
+    showToast("Save failed: " + err.message);
+    return;
+  }
   closeModal("modal-species");
-  showToast("Species added");
+  showToast("Species added - " + species.length + " total");
   renderShroomadex();
 }
 
