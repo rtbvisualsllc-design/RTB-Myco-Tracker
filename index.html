@@ -1048,7 +1048,7 @@ function renderSpeciesCard(s) {
           <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">
             <button class="btn btn-gold btn-sm" onclick="openEditSpeciesModal('${s.id}')">✏️ EDIT</button>
             <button class="btn btn-ghost btn-sm" onclick="openSpeciesPhotoModal('${s.id}')">📷 ADD PHOTO</button>
-            <button class="btn btn-danger btn-sm" onclick="deleteSpecies(${s.id})">DELETE</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteSpecies('${s.id}')">DELETE</button>
           </div>
         </div>
       </div>
@@ -1193,7 +1193,7 @@ function saveSpecies() {
 
 function deleteSpecies(id) {
   if (!confirm('Remove this species?')) return;
-  const species = getData('species', []).filter(s => s.id != id);
+  const species = getData('species', []).filter(s => String(s.id) !== String(id));
   setData('species', species);
   showToast('Species removed');
   renderShroomadex();
@@ -1834,7 +1834,7 @@ function openSpeciesPhotoModal(id) {
     </div>
     <input type="file" id="spp-photo-input" accept="image/*" style="display:none;" onchange=\"compressAndPreview(this,'spp-photo-preview','spp-photo-placeholder')\">
     <div class="flex gap-8" style="margin-top:16px;">
-      <button class="btn btn-primary" style="flex:1;" onclick="saveSpeciesPhoto(${id})">SAVE PHOTO</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="saveSpeciesPhoto('${id}')">SAVE PHOTO</button>
       <button class="btn btn-ghost" onclick="closeModal('modal-species')">CANCEL</button>
     </div>
   `;
@@ -1845,7 +1845,7 @@ function saveSpeciesPhoto(id) {
   const preview = document.getElementById('spp-photo-preview');
   if (!preview || !preview.src || !preview.src.startsWith('data:')) { showToast('Please select a photo'); return; }
   const species = getData('species', []);
-  const idx = species.findIndex(s => s.id == id);
+  const idx = species.findIndex(s => String(s.id) === String(id));
   if (idx === -1) return;
   species[idx].photo = preview.src;
   setData('species', species);
@@ -1930,7 +1930,7 @@ function openEditSpeciesModal(id) {
       <input type="color" id="sf-color" value="${sp.color||'#8B7355'}" style="width:100%;height:40px;border:1px solid var(--border2);border-radius:4px;background:var(--bg2);">
     </div>
     <div class="flex gap-8">
-      <button class="btn btn-primary" style="flex:1;" onclick="saveEditSpecies(${id})">SAVE CHANGES</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="saveEditSpecies('${id}')">SAVE CHANGES</button>
       <button class="btn btn-ghost" onclick="closeModal('modal-species')">CANCEL</button>
     </div>
   `;
