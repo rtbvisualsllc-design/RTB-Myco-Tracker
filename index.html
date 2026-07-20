@@ -394,83 +394,121 @@
 // DATA STORE
 // ============================================================
 const DB = {
-  get(key) {
-    try {
-      return JSON.parse(localStorage.getItem('rtb_' + key) || 'null');
-    } catch(e) {
-      console.error('Storage read failed:', key, e);
-      return null;
-    }
-  },
-  set(key, val) {
-    try {
-      localStorage.setItem('rtb_' + key, JSON.stringify(val));
-      return true;
-    } catch(e) {
-      console.error('Storage save failed:', key, e);
-      alert('Storage is full. Your data was NOT saved. Try smaller photos, fewer photos, or clear old photos.');
-      return false;
-    }
-  },
+  get(key) { try { return JSON.parse(localStorage.getItem('rtb_' + key) || 'null'); } catch(e) { return null; } },
+  set(key, val) { try { localStorage.setItem('rtb_' + key, JSON.stringify(val)); } catch(e) {} },
 };
 
 function getData(key, def) { return DB.get(key) ?? def; }
-function setData(key, val) { return DB.set(key, val); }
+function setData(key, val) { DB.set(key, val); }
 
-// INITIAL SEED DATA
+// DATA INIT
+// Safe seed: only adds default species if they don't already exist by name
+// Never overwrites user data - safe across ALL future updates
 function initData() {
-  if (!DB.get('seeded')) {
-    setData('log_entries', [
-      { id: 1, date: '2025-05-19', dayNum: 1, tempHigh: 92, tempLow: 80, rainfall: true, rainfallAmt: 'heavy', humidity: 'high', succStage: 1, observations: [
-        { species: 'Panaeolus antillarum', location: 'Horse Hay Area', abundance: 'clusters', notes: 'First big flush of season' },
-        { species: 'Panaeolus antillarum', location: 'Goat Play Area', abundance: 'clusters', notes: '' },
-        { species: 'Panaeolus antillarum', location: 'Front Gate', abundance: 'clusters', notes: '' },
-        { species: 'Ink Cap (Coprinellus sp.)', location: 'Horse Hay Area', abundance: 'several', notes: 'Multiple areas' },
-      ], notes: 'Season start! First big breakthrough. Rain 2 days prior triggered flush.' },
-      { id: 2, date: '2025-05-20', dayNum: 2, tempHigh: 93, tempLow: 80, rainfall: true, rainfallAmt: 'moderate', humidity: 'high', succStage: 1, observations: [
-        { species: 'Panaeolus antillarum', location: 'Horse Hay Area', abundance: 'clusters', notes: '' },
-        { species: 'Panaeolus antillarum', location: 'OG Pile - Back Left', abundance: 'first appearance', notes: 'NEW LOCATION' },
-      ], notes: 'More rain. New manure pile started behind barn.' },
-      { id: 3, date: '2025-05-21', dayNum: 3, tempHigh: 93, tempLow: 80, rainfall: false, rainfallAmt: 'none', humidity: 'high', succStage: 1, observations: [
-        { species: 'Panaeolus antillarum', location: 'Back Fence Line', abundance: 'spreading', notes: 'Noticed more along back fence' },
-        { species: 'Ink Cap (Coprinellus sp.)', location: 'Behind Barn', abundance: 'several', notes: 'Found in old manure' },
-      ], notes: 'Light rain previous day. Pan ant holding strong all spots.' },
-      { id: 4, date: '2025-05-23', dayNum: 4, tempHigh: 94, tempLow: 81, rainfall: false, rainfallAmt: 'none', humidity: 'high', succStage: 1, observations: [
-        { species: 'Panaeolus antillarum', location: 'Horse Hay Area', abundance: 'massive clusters', notes: 'Best day yet - peak flush' },
-      ], notes: 'Best day yet. Largest clusters across all locations.' },
-      { id: 5, date: '2025-05-24', dayNum: 5, tempHigh: 93, tempLow: 80, rainfall: true, rainfallAmt: 'heavy', humidity: 'high', succStage: 1, observations: [
-        { species: 'Panaeolus antillarum', location: 'OG Pile - Front Left', abundance: 'first appearance', notes: '' },
-        { species: 'Panaeolus antillarum', location: 'Front Facing Barn', abundance: 'massive clusters', notes: 'Ocean of mushrooms' },
-      ], notes: 'Lots of rain night before. New corners of OG pile activating.' },
-      { id: 6, date: '2025-05-26', dayNum: 6, tempHigh: 93, tempLow: 80, rainfall: false, rainfallAmt: 'light prev 2 days', humidity: 'high', succStage: 3, observations: [
-        { species: 'Panaeolus antillarum', location: 'Horse Hay Area', abundance: 'fading', notes: '' },
-        { species: 'Conocybe sp. (Milky Cone Cap)', location: 'Horse Hay Area', abundance: 'first', notes: 'FIRST CONOCYBE - succession marker' },
-        { species: 'Ink Cap (Coprinellus sp.)', location: 'New Pile Behind Barn', abundance: 'tons', notes: '' },
-        { species: 'Panaeolus papilionaceus', location: 'Horse Hay Area', abundance: 'few', notes: '' },
-        { species: 'Chlorophyllum molybdites', location: 'OG Pile - Back Left', abundance: 'one', notes: 'False parasol - TOXIC' },
-      ], notes: 'Succession advancing. Conocybe = significant marker. Most original spots fading.' },
-      { id: 7, date: '2025-05-27', dayNum: 7, tempHigh: 93, tempLow: 80, rainfall: true, rainfallAmt: 'heavy', humidity: 'high', succStage: 3, observations: [
-        { species: 'Panaeolus antillarum', location: 'New Pile Behind Barn', abundance: 'lots', notes: '' },
-        { species: 'Bolbitius coprophilus', location: 'New Pile Behind Barn', abundance: 'several', notes: 'Red when young, brown when mature' },
-        { species: 'Panaeolus papilionaceus', location: 'Horse Hay Area', abundance: 'lots', notes: '' },
-        { species: 'Conocybe sp. (Milky Cone Cap)', location: 'Horse Hay Area', abundance: 'few', notes: '' },
-      ], notes: 'Heavy rain reset flush cycle. New pile very active. Old spots transitioning.' },
-    ]);
+  if (!DB.get('log_entries')) setData('log_entries', []);
+  if (!DB.get('harvests')) setData('harvests', []);
+  if (!DB.get('lab_runs')) setData('lab_runs', []);
 
-    setData('species', [
-      { id: 1, name: 'Panaeolus antillarum', commonName: 'Dunce Cap / Cracked Cap', guild: 'coprophilous', edibility: 'inedible', toxicity: 'none', psychoactive: false, firstSeen: '2025-05-19', lastSeen: '2025-05-27', locations: ['Horse Hay Area','Goat Play Area','Front Gate','OG Pile','New Pile'], substrate: 'Horse/donkey manure', succStage: 1, notes: 'Dominant early succession species. Appears first after rain on fresh-aged manure. Pioneer indicator - when peaking, cubensis is typically 5-14 days out. White cap that cracks in heat. Black spore print.', photo: null, color: '#8B7355' },
-      { id: 2, name: 'Ink Cap (Coprinellus sp.)', commonName: 'Inky Cap', guild: 'coprophilous', edibility: 'inedible', toxicity: 'low', psychoactive: false, firstSeen: '2025-05-19', lastSeen: '2025-05-27', locations: ['Horse Hay Area','Behind Barn','New Pile'], substrate: 'Old manure / decaying organic', succStage: 1, notes: 'Fast fruiting, autoliquefies (autodigests) quickly. Wide decomposition range. Early succession companion to pan ant.', photo: null, color: '#2C2C2C' },
-      { id: 3, name: 'Panaeolus papilionaceus', commonName: 'Petticoat Mottlegill', guild: 'coprophilous', edibility: 'inedible', toxicity: 'low', psychoactive: false, firstSeen: '2025-05-26', lastSeen: '2025-05-27', locations: ['Horse Hay Area'], substrate: 'Manure', succStage: 2, notes: 'Close relative of pan ant. Mid-succession. Mildly psychoactive in some populations but inconsistently.', photo: null, color: '#9B7E6E' },
-      { id: 4, name: 'Bolbitius coprophilus', commonName: 'Dung Fieldcap', guild: 'coprophilous', edibility: 'inedible', toxicity: 'none', psychoactive: false, firstSeen: '2025-05-27', lastSeen: '2025-05-27', locations: ['New Pile Behind Barn'], substrate: 'Fresh manure', succStage: 2, notes: 'Red/rusty when young pins, turns brown when mature. No real lookalike concern. Good dung succession marker.', photo: null, color: '#C17D3C' },
-      { id: 5, name: 'Conocybe sp. (Milky Cone Cap)', commonName: 'Milky Cone Cap', guild: 'coprophilous', edibility: 'TOXIC', toxicity: 'HIGH - possible amatoxins', psychoactive: false, firstSeen: '2025-05-26', lastSeen: '2025-05-27', locations: ['Horse Hay Area'], substrate: 'Manure / enriched soil', succStage: 3, notes: '⚠️ DANGER: Some Conocybe species (esp. C. filaris) contain amatoxins identical to death caps. Grows in same substrate as cubensis. Cone-shaped, fragile. NEVER consume. Key late-succession indicator - when present, cubensis window is open.', photo: null, color: '#D4C5A9' },
-      { id: 6, name: 'Chlorophyllum molybdites', commonName: 'False Parasol / Green-Spored Lepiota', guild: 'saprotrophic', edibility: 'TOXIC', toxicity: 'HIGH - severe GI', psychoactive: false, firstSeen: '2025-05-26', lastSeen: '2025-05-26', locations: ['OG Pile - Back Left'], substrate: 'Soil / disturbed ground', succStage: 2, notes: '⚠️ TOXIC: Most commonly eaten poisonous mushroom in North America. Causes severe vomiting/diarrhea. Green spore print distinguishes it. Loves Florida lawns and disturbed humid areas. DO NOT eat.', photo: null, color: '#7A9E5F' },
-    ]);
+  // Default species - only injected if not already present by name
+  const DEFAULT_SPECIES = [
+    { id: 'default_1', name: 'Panaeolus antillarum', commonName: 'Dunce Cap / Cracked Cap', guild: 'coprophilous', edibility: 'inedible', toxicity: 'none', psychoactive: false, firstSeen: '2025-05-19', lastSeen: '', locations: ['Horse Hay Area','Goat Play Area','Front Gate','OG Pile - Back Left','New Pile Behind Barn','Back Fence Line','Front Facing Barn'], substrate: 'Horse/donkey manure', succStage: 1, notes: 'Dominant pioneer species on this property. Appears first after rain on fresh-aged manure. White cap that cracks in heat creating distinctive pattern. Black spore print. When peaking and beginning to fade, cubensis pins are typically 5-14 days out given continued rain. Pan ant:cone cap ratio is a key succession signal — high cone cap dominance after a dry period indicates late succession and readiness.', photo: null, color: '#8B7355' },
+    { id: 'default_2', name: 'Ink Cap (Coprinellus sp.)', commonName: 'Inky Cap', guild: 'coprophilous', edibility: 'inedible', toxicity: 'low', psychoactive: false, firstSeen: '2025-05-19', lastSeen: '', locations: ['Horse Hay Area','Behind Barn','New Pile Behind Barn'], substrate: 'Old manure / decaying organic matter', succStage: 1, notes: 'Fast fruiting, autoliquefies (autodigests) quickly into black ink. Early succession companion to pan ant. Tolerates a wider decomposition range than pan ant — appears in both fresh and older substrate. Presence alongside pan ant confirms early succession stage.', photo: null, color: '#2C2C2C' },
+    { id: 'default_3', name: 'Panaeolus papilionaceus', commonName: 'Petticoat Mottlegill', guild: 'coprophilous', edibility: 'inedible', toxicity: 'low', psychoactive: false, firstSeen: '2025-05-26', lastSeen: '', locations: ['Horse Hay Area'], substrate: 'Manure', succStage: 2, notes: 'Close relative of pan ant. Mid-succession indicator. Distinguished by toothed/fringed gill edges (petticoat pattern). Mildly psychoactive in some populations but inconsistently — not reliable or worth pursuing. Appearance signals substrate is advancing past early succession.', photo: null, color: '#9B7E6E' },
+    { id: 'default_4', name: 'Bolbitius coprophilus', commonName: 'Dung Fieldcap', guild: 'coprophilous', edibility: 'inedible', toxicity: 'none', psychoactive: false, firstSeen: '2025-05-27', lastSeen: '', locations: ['New Pile Behind Barn'], substrate: 'Fresh/active manure', succStage: 2, notes: 'Rusty red/pink when young pins — easily mistaken for something else at pin stage. Turns brown when fully mature. No significant lookalike concerns on this property. Good mid-succession dung marker. First appeared on the new barn pile when it was just beginning to colonize.', photo: null, color: '#C17D3C' },
+    { id: 'default_5', name: 'Conocybe sp. (Milky Cone Cap)', commonName: 'Milky Cone Cap', guild: 'coprophilous', edibility: 'TOXIC', toxicity: 'HIGH - possible amatoxins', psychoactive: false, firstSeen: '2025-05-26', lastSeen: '', locations: ['Horse Hay Area'], substrate: 'Manure / enriched soil', succStage: 3, notes: '⚠️ DANGER: Some Conocybe species — especially C. filaris — contain amatoxins identical to death caps. Lethal in sufficient quantity. Grows in exact same substrate as cubensis. Cone-shaped, fragile, pale. NEVER consume any Conocybe. KEY SUCCESSION INDICATOR: first appearance signals you are in the late pre-cubensis window. When cone caps dominate after a dry period, substrate maturity is high and next rain event may trigger cubensis flush within 5-14 days.', photo: null, color: '#D4C5A9' },
+    { id: 'default_6', name: 'Chlorophyllum molybdites', commonName: 'False Parasol / Green-Spored Lepiota', guild: 'saprotrophic', edibility: 'TOXIC', toxicity: 'HIGH - severe GI', psychoactive: false, firstSeen: '2025-05-26', lastSeen: '', locations: ['OG Pile - Back Left'], substrate: 'Soil / disturbed ground near manure', succStage: 2, notes: '⚠️ TOXIC: Most commonly eaten poisonous mushroom in North America by volume. Causes severe vomiting, diarrhea, and cramping within 1-3 hours. Looks like a large edible parasol. KEY ID: dull green spore print (vs white on edible parasols). Loves Florida lawns, disturbed humid ground, and manure-enriched soil. Appears sporadically — not a reliable succession indicator but confirms rich substrate environment. DO NOT eat under any circumstances.', photo: null, color: '#7A9E5F' },
+  ];
 
-    setData('harvests', []);
-    setData('lab_runs', []);
-    setData('locations', LOCATIONS.filter(l => l !== 'Other'));
-    setData('seeded', true);
+  // Load existing species
+  let existing = DB.get('species') || [];
+  const existingNames = new Set(existing.map(s => s.name));
+
+  // Only add defaults that aren't already in the list
+  let added = false;
+  DEFAULT_SPECIES.forEach(function(sp) {
+    if (!existingNames.has(sp.name)) {
+      existing.push(sp);
+      added = true;
+    }
+  });
+
+  if (added || !DB.get('species')) {
+    setData('species', existing);
   }
+}
+
+// ============================================================
+// PHOTO COMPRESSION - auto-compress all photos before saving
+// ============================================================
+function compressPhoto(dataUrl, maxWidth, quality, callback) {
+  const img = new Image();
+  img.onload = function() {
+    const canvas = document.createElement('canvas');
+    let w = img.width, h = img.height;
+    if (w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth; }
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, w, h);
+    callback(canvas.toDataURL('image/jpeg', quality));
+  };
+  img.src = dataUrl;
+}
+
+function compressAndPreview(input, previewId, placeholderId, callback) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    compressPhoto(e.target.result, 800, 0.7, function(compressed) {
+      const preview = document.getElementById(previewId);
+      const placeholder = document.getElementById(placeholderId);
+      if (preview) { preview.src = compressed; preview.style.display = 'block'; }
+      if (placeholder) placeholder.style.display = 'none';
+      if (callback) callback(compressed);
+    });
+  };
+  reader.readAsDataURL(file);
+}
+
+// ============================================================
+// EXPORT / BACKUP
+// ============================================================
+function exportData() {
+  const data = {
+    exported: new Date().toISOString(),
+    log_entries: getData('log_entries', []),
+    species: getData('species', []),
+    harvests: getData('harvests', []),
+    lab_runs: getData('lab_runs', []),
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'RTB-Myco-Backup-' + new Date().toISOString().split('T')[0] + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Backup saved ✓');
+}
+
+function importData(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (data.log_entries) setData('log_entries', data.log_entries);
+      if (data.species) setData('species', data.species);
+      if (data.harvests) setData('harvests', data.harvests);
+      if (data.lab_runs) setData('lab_runs', data.lab_runs);
+      showToast('Data restored ✓');
+      showView('dashboard');
+    } catch(err) {
+      showToast('Invalid backup file');
+    }
+  };
+  reader.readAsText(file);
 }
 
 // ============================================================
@@ -516,105 +554,6 @@ const LOCATIONS = [
 ];
 
 const ABUNDANCE = ['first appearance','solitary','few','several','clusters','massive clusters','fading','gone'];
-
-// ============================================================
-// DYNAMIC LOCATIONS + CUSTOM FIELD HELPERS
-// ============================================================
-function getLocations() {
-  const saved = getData('locations', null);
-  if (Array.isArray(saved) && saved.length) return saved;
-  const base = LOCATIONS.filter(l => l !== 'Other');
-  setData('locations', base);
-  return base;
-}
-
-function addLocation(name) {
-  name = (name || '').trim();
-  if (!name) return '';
-  const locations = getLocations();
-  const exists = locations.some(l => l.toLowerCase() === name.toLowerCase());
-  if (!exists) {
-    locations.push(name);
-    locations.sort((a,b) => a.localeCompare(b));
-    setData('locations', locations);
-  }
-  return name;
-}
-
-function escapeHtml(str) {
-  return String(str ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
-}
-
-function toggleOtherInput(selectEl, inputId) {
-  const input = document.getElementById(inputId);
-  if (!input) return;
-  const isOther = selectEl && (selectEl.value === 'Other' || selectEl.value === 'Other / New Species');
-  input.style.display = isOther ? 'block' : 'none';
-  if (isOther) setTimeout(() => input.focus(), 30);
-}
-
-function getSelectOrCustom(baseId, otherValue) {
-  const select = document.getElementById(baseId);
-  const custom = document.getElementById(baseId + '_custom');
-  if (!select) return '';
-  if (select.value === otherValue) return (custom?.value || '').trim();
-  return select.value || '';
-}
-
-function getSpeciesOptions(selected) {
-  const species = getData('species', []);
-  const spNames = [
-    'Panaeolus antillarum','Ink Cap (Coprinellus sp.)','Panaeolus papilionaceus',
-    'Bolbitius coprophilus','Conocybe sp. (Milky Cone Cap)','Chlorophyllum molybdites',
-    'Psilocybe cubensis','Unknown - needs ID', ...species.map(s => s.name)
-  ].filter(Boolean);
-  const unique = [...new Set(spNames)];
-  const hasSelected = selected && unique.includes(selected);
-  return unique.map(s => `<option ${selected === s ? 'selected' : ''}>${escapeHtml(s)}</option>`).join('') +
-    `<option ${selected && !hasSelected ? 'selected' : ''}>Other / New Species</option>`;
-}
-
-function getLocationOptions(selected) {
-  const locations = getLocations();
-  const hasSelected = selected && locations.includes(selected);
-  return locations.map(l => `<option ${selected === l ? 'selected' : ''}>${escapeHtml(l)}</option>`).join('') +
-    `<option ${selected && !hasSelected ? 'selected' : ''}>Other</option>`;
-}
-
-function getCheckedSpeciesLocations() {
-  const checked = [...document.querySelectorAll('#sf-locs input[type="checkbox"]:checked')].map(c => c.value);
-  const customLoc = (document.getElementById('sf-new-location')?.value || '').trim();
-  if (customLoc) checked.push(addLocation(customLoc));
-  return [...new Set(checked.filter(Boolean))];
-}
-
-function ensureSpeciesExistsFromLog(name, locationName, date) {
-  name = (name || '').trim();
-  if (!name || name === 'Unknown - needs ID' || name === 'Other / New Species') return;
-  const species = getData('species', []);
-  const exists = species.some(s => (s.name || '').toLowerCase() === name.toLowerCase());
-  if (exists) return;
-  const locs = locationName ? [locationName] : [];
-  species.push({
-    id: uid(),
-    name,
-    commonName: '',
-    edibility: 'unknown',
-    toxicity: 'none',
-    guild: 'unknown',
-    succStage: 1,
-    psychoactive: false,
-    substrate: '',
-    firstSeen: date || new Date().toISOString().split('T')[0],
-    lastSeen: date || new Date().toISOString().split('T')[0],
-    locations: locs,
-    notes: 'Created automatically from a Daily Log entry. Edit this species in the Shroomadex to add full ID details.',
-    color: '#8B7355',
-    photo: null,
-  });
-  setData('species', species);
-}
-
 
 const EDIBILITY = ['edible','edible - caution','inedible','TOXIC','unknown'];
 const TOXICITY = ['none','low','moderate','HIGH - GI','HIGH - amatoxins','HIGH - other'];
@@ -764,6 +703,15 @@ function renderDashboard() {
         <button class="btn btn-ghost btn-full" onclick="showView('shroomadex');setTimeout(openSpeciesModal,100)">+ SPECIES</button>
         <button class="btn btn-ghost btn-full" onclick="showView('lab');setTimeout(openLabModal,100)">+ LAB RUN</button>
       </div>
+      <div class="section-title" style="margin-top:14px;">DATA & BACKUP</div>
+      <div class="stat-grid">
+        <button class="btn btn-ghost btn-full" onclick="exportData()">⬇️ EXPORT BACKUP</button>
+        <label class="btn btn-ghost btn-full" style="text-align:center;cursor:pointer;">
+          ⬆️ RESTORE BACKUP
+          <input type="file" accept=".json" style="display:none;" onchange="importData(this)">
+        </label>
+      </div>
+      <div class="tiny dim" style="text-align:center;margin-top:6px;">Export your data before any app update</div>
 
       <div class="alert alert-info mt-12">
         <strong>🍄 Succession Note:</strong> Conocybe appeared May 26. You are in the pre-cubensis window. Watch established manure zones closely after rain events. Expected pins: 3–14 days post next significant rain.
@@ -799,7 +747,7 @@ function renderLogPhotos(e) {
   e.photos.forEach(function(p, pi) {
     out += '<div style="position:relative;">';
     out += '<img src="' + p + '" style="width:80px;height:80px;object-fit:cover;border-radius:4px;border:1px solid var(--border);">';
-    out += '<button onclick="removeLogPhoto(\'' + e.id + '\',' + pi + ')" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.7);border:none;color:var(--red2);font-size:10px;cursor:pointer;border-radius:2px;padding:1px 4px;">✕</button>';
+    out += '<button onclick="removeLogPhoto('' + e.id + '',' + pi + ')" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.7);border:none;color:var(--red2);font-size:10px;cursor:pointer;border-radius:2px;padding:1px 4px;">✕</button>';
     out += '</div>';
   });
   out += '</div>';
@@ -934,6 +882,9 @@ function openLogModal() {
 }
 
 function addObsRow() {
+  const species = getData('species', []);
+  const spNames = ['Panaeolus antillarum','Ink Cap (Coprinellus sp.)','Panaeolus papilionaceus','Bolbitius coprophilus','Conocybe sp. (Milky Cone Cap)','Chlorophyllum molybdites','Psilocybe cubensis','Unknown - needs ID',...species.map(s=>s.name)];
+  const unique = [...new Set(spNames)];
   const id = 'obs_' + uid();
   const row = document.createElement('div');
   row.id = id;
@@ -942,24 +893,23 @@ function addObsRow() {
     <div class="form-row" style="margin-bottom:8px;">
       <div>
         <label class="form-label">SPECIES</label>
-        <select class="form-select" id="${id}_sp" onchange="toggleOtherInput(this,'${id}_sp_custom')">
-          ${getSpeciesOptions('')}
+        <select class="form-select" id="${id}_sp">
+          ${unique.map(s => `<option>${s}</option>`).join('')}
+          <option>Other / New Species</option>
         </select>
-        <input class="form-input" id="${id}_sp_custom" placeholder="Type new species name" style="display:none;margin-top:6px;">
       </div>
       <div>
         <label class="form-label">LOCATION</label>
-        <select class="form-select" id="${id}_loc" onchange="toggleOtherInput(this,'${id}_loc_custom')">
-          ${getLocationOptions('')}
+        <select class="form-select" id="${id}_loc">
+          ${LOCATIONS.map(l => `<option>${l}</option>`).join('')}
         </select>
-        <input class="form-input" id="${id}_loc_custom" placeholder="Type new location" style="display:none;margin-top:6px;">
       </div>
     </div>
     <div class="form-row">
       <div>
         <label class="form-label">ABUNDANCE</label>
         <select class="form-select" id="${id}_ab">
-          ${ABUNDANCE.map(a => `<option>${escapeHtml(a)}</option>`).join('')}
+          ${ABUNDANCE.map(a => `<option>${a}</option>`).join('')}
         </select>
       </div>
       <div>
@@ -979,13 +929,9 @@ function saveLogEntry() {
   const observations = [];
   for (let row of rows) {
     const id = row.id;
-    const speciesName = getSelectOrCustom(id + '_sp', 'Other / New Species');
-    const locationName = getSelectOrCustom(id + '_loc', 'Other');
-    if (locationName) addLocation(locationName);
-    ensureSpeciesExistsFromLog(speciesName, locationName, date);
     observations.push({
-      species: speciesName,
-      location: locationName,
+      species: document.getElementById(id+'_sp')?.value || '',
+      location: document.getElementById(id+'_loc')?.value || '',
       abundance: document.getElementById(id+'_ab')?.value || '',
       notes: document.getElementById(id+'_notes')?.value || '',
     });
@@ -1004,7 +950,7 @@ function saveLogEntry() {
   };
   const entries = getData('log_entries', []);
   entries.push(entry);
-  if (!setData('log_entries', entries)) return;
+  setData('log_entries', entries);
   closeModal('modal-log-entry');
   showToast('Entry saved ✓');
   renderLog();
@@ -1013,7 +959,7 @@ function saveLogEntry() {
 function deleteLogEntry(id) {
   if (!confirm('Delete this entry?')) return;
   const entries = getData('log_entries', []).filter(e => e.id != id);
-  if (!setData('log_entries', entries)) return;
+  setData('log_entries', entries);
   showToast('Entry deleted');
   renderLog();
 }
@@ -1102,7 +1048,7 @@ function renderSpeciesCard(s) {
           <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">
             <button class="btn btn-gold btn-sm" onclick="openEditSpeciesModal('${s.id}')">✏️ EDIT</button>
             <button class="btn btn-ghost btn-sm" onclick="openSpeciesPhotoModal('${s.id}')">📷 ADD PHOTO</button>
-            <button class="btn btn-danger btn-sm" onclick="deleteSpecies('${s.id}')">DELETE</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteSpecies(${s.id})">DELETE</button>
           </div>
         </div>
       </div>
@@ -1129,7 +1075,7 @@ function openSpeciesModal() {
           <div class="photo-box-label">TAP TO ADD PHOTO</div>
         </div>
       </div>
-      <input type="file" id="sf-photo-input" accept="image/*" style="display:none;" onchange="previewPhoto(this,'sf-photo-preview','sf-photo-placeholder')">
+      <input type="file" id="sf-photo-input" accept="image/*" style="display:none;" onchange=\"compressAndPreview(this,'sf-photo-preview','sf-photo-placeholder')\">
     </div>
     <div class="form-row">
       <div class="form-group">
@@ -1177,13 +1123,12 @@ function openSpeciesModal() {
     <div class="form-group">
       <label class="form-label">LOCATIONS ON PROPERTY</label>
       <div id="sf-locs" style="display:flex;flex-wrap:wrap;gap:6px;">
-        ${getLocations().map(l => `
+        ${LOCATIONS.map(l => `
           <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
             <input type="checkbox" value="${l}" style="accent-color:var(--green2);"> <span class="tiny" style="color:var(--dim);">${l}</span>
           </label>
         `).join('')}
       </div>
-      <input class="form-input" id="sf-new-location" placeholder="Add a new location, then save" style="margin-top:8px;">
     </div>
     <div class="form-group">
       <label class="form-label">ECOLOGY NOTES</label>
@@ -1204,31 +1149,13 @@ function openSpeciesModal() {
 function previewPhoto(input, previewId, placeholderId) {
   const file = input.files[0];
   if (!file) return;
-
   const reader = new FileReader();
   reader.onload = e => {
-    const img = new Image();
-    img.onload = () => {
-      const maxSide = 900;
-      let { width, height } = img;
-      const scale = Math.min(1, maxSide / Math.max(width, height));
-      width = Math.round(width * scale);
-      height = Math.round(height * scale);
-
-      const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, width, height);
-
-      const compressed = canvas.toDataURL('image/jpeg', 0.72);
-      const preview = document.getElementById(previewId);
-      const placeholder = document.getElementById(placeholderId);
-      preview.src = compressed;
-      preview.style.display = 'block';
-      if (placeholder) placeholder.style.display = 'none';
-    };
-    img.src = e.target.result;
+    const preview = document.getElementById(previewId);
+    const placeholder = document.getElementById(placeholderId);
+    preview.src = e.target.result;
+    preview.style.display = 'block';
+    if (placeholder) placeholder.style.display = 'none';
   };
   reader.readAsDataURL(file);
 }
@@ -1236,7 +1163,8 @@ function previewPhoto(input, previewId, placeholderId) {
 function saveSpecies() {
   const name = document.getElementById('sf-name').value.trim();
   if (!name) { showToast('Species name required'); return; }
-  const locs = getCheckedSpeciesLocations();
+  const locs = [...document.querySelectorAll('#sf-locs input:checked')].map(c => c.value);
+  const photoInput = document.getElementById('sf-photo-input');
   const preview = document.getElementById('sf-photo-preview');
   const photo = preview && preview.src && preview.src.startsWith('data:') ? preview.src : null;
   const species = getData('species', []);
@@ -1257,7 +1185,7 @@ function saveSpecies() {
     color: document.getElementById('sf-color').value,
     photo,
   });
-  if (!setData('species', species)) return;
+  setData('species', species);
   closeModal('modal-species');
   showToast('Species added to Shroomadex ✓');
   renderShroomadex();
@@ -1266,7 +1194,7 @@ function saveSpecies() {
 function deleteSpecies(id) {
   if (!confirm('Remove this species?')) return;
   const species = getData('species', []).filter(s => s.id != id);
-  if (!setData('species', species)) return;
+  setData('species', species);
   showToast('Species removed');
   renderShroomadex();
 }
@@ -1383,7 +1311,7 @@ function openHarvestModal() {
     <div class="form-group">
       <label class="form-label">LOCATION</label>
       <select class="form-select" id="hf-loc">
-        ${getLocations().map(l => `<option>${l}</option>`).join('')}
+        ${LOCATIONS.map(l => `<option>${l}</option>`).join('')}
       </select>
     </div>
     <div class="form-row">
@@ -1423,7 +1351,7 @@ function openHarvestModal() {
           <div class="photo-box-label">TAP TO ADD PHOTO</div>
         </div>
       </div>
-      <input type="file" id="hf-photo-input" accept="image/*" style="display:none;" onchange="previewPhoto(this,'hf-photo-preview','hf-photo-placeholder')">
+      <input type="file" id="hf-photo-input" accept="image/*" style="display:none;" onchange=\"compressAndPreview(this,'hf-photo-preview','hf-photo-placeholder')\">
     </div>
     <div class="form-group">
       <label class="form-label">NOTES</label>
@@ -1762,17 +1690,16 @@ function openEditLogModal(id) {
           <div class="form-row" style="margin-bottom:8px;">
             <div>
               <label class="form-label">SPECIES</label>
-              <select class="form-select" id="${rid}_sp" onchange="toggleOtherInput(this,'${rid}_sp_custom')">
-                ${getSpeciesOptions(o.species)}
+              <select class="form-select" id="${rid}_sp">
+                ${unique.map(s=>`<option ${o.species==s?'selected':''}>${s}</option>`).join('')}
+                <option ${!unique.includes(o.species)?'selected':''}>Other / New Species</option>
               </select>
-              <input class="form-input" id="${rid}_sp_custom" value="${!unique.includes(o.species) ? escapeHtml(o.species || '') : ''}" placeholder="Type new species name" style="${!unique.includes(o.species) ? 'display:block;' : 'display:none;'}margin-top:6px;">
             </div>
             <div>
               <label class="form-label">LOCATION</label>
-              <select class="form-select" id="${rid}_loc" onchange="toggleOtherInput(this,'${rid}_loc_custom')">
-                ${getLocationOptions(o.location)}
+              <select class="form-select" id="${rid}_loc">
+                ${LOCATIONS.map(l=>`<option ${o.location==l?'selected':''}>${l}</option>`).join('')}
               </select>
-              <input class="form-input" id="${rid}_loc_custom" value="${!getLocations().includes(o.location) ? escapeHtml(o.location || '') : ''}" placeholder="Type new location" style="${!getLocations().includes(o.location) ? 'display:block;' : 'display:none;'}margin-top:6px;">
             </div>
           </div>
           <div class="form-row">
@@ -1812,13 +1739,9 @@ function saveEditLogEntry(id) {
   const observations = [];
   for (let row of rows) {
     const rid = row.id;
-    const speciesName = getSelectOrCustom(rid + '_sp', 'Other / New Species');
-    const locationName = getSelectOrCustom(rid + '_loc', 'Other');
-    if (locationName) addLocation(locationName);
-    ensureSpeciesExistsFromLog(speciesName, locationName, document.getElementById('lf-date')?.value);
     observations.push({
-      species: speciesName,
-      location: locationName,
+      species: document.getElementById(rid+'_sp')?.value || '',
+      location: document.getElementById(rid+'_loc')?.value || '',
       abundance: document.getElementById(rid+'_ab')?.value || '',
       notes: document.getElementById(rid+'_notes')?.value || '',
     });
@@ -1835,7 +1758,7 @@ function saveEditLogEntry(id) {
     observations,
     notes: document.getElementById('lf-notes').value,
   };
-  if (!setData('log_entries', entries)) return;
+  setData('log_entries', entries);
   closeModal('modal-log-entry');
   showToast('Entry updated ✓');
   renderLog();
@@ -1854,7 +1777,7 @@ function openLogPhotoModal(id) {
         <div class="photo-box-label">TAP TO SELECT PHOTO</div>
       </div>
     </div>
-    <input type="file" id="lp-photo-input" accept="image/*" style="display:none;" onchange="previewPhoto(this,'lp-photo-preview','lp-photo-placeholder')">
+    <input type="file" id="lp-photo-input" accept="image/*" style="display:none;" onchange=\"compressAndPreview(this,'lp-photo-preview','lp-photo-placeholder')\">
     <div class="form-group" style="margin-top:12px;">
       <label class="form-label">PHOTO CAPTION (optional)</label>
       <input class="form-input" id="lp-caption" placeholder="e.g. Flush #1 at hay area">
@@ -1876,7 +1799,7 @@ function saveLogPhoto(id) {
   if (idx === -1) return;
   if (!entries[idx].photos) entries[idx].photos = [];
   entries[idx].photos.push(preview.src);
-  if (!setData('log_entries', entries)) return;
+  setData('log_entries', entries);
   closeModal('modal-log-entry');
   showToast('Photo added ✓');
   renderLog();
@@ -1887,7 +1810,7 @@ function removeLogPhoto(entryId, photoIdx) {
   const idx = entries.findIndex(x => x.id == entryId);
   if (idx === -1) return;
   entries[idx].photos = (entries[idx].photos||[]).filter((_,i) => i !== photoIdx);
-  if (!setData('log_entries', entries)) return;
+  setData('log_entries', entries);
   showToast('Photo removed');
   renderLog();
 }
@@ -1909,9 +1832,9 @@ function openSpeciesPhotoModal(id) {
         <div class="photo-box-label">TAP TO SELECT PHOTO</div>
       </div>
     </div>
-    <input type="file" id="spp-photo-input" accept="image/*" style="display:none;" onchange="previewPhoto(this,'spp-photo-preview','spp-photo-placeholder')">
+    <input type="file" id="spp-photo-input" accept="image/*" style="display:none;" onchange=\"compressAndPreview(this,'spp-photo-preview','spp-photo-placeholder')\">
     <div class="flex gap-8" style="margin-top:16px;">
-      <button class="btn btn-primary" style="flex:1;" onclick="saveSpeciesPhoto('${id}')">SAVE PHOTO</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="saveSpeciesPhoto(${id})">SAVE PHOTO</button>
       <button class="btn btn-ghost" onclick="closeModal('modal-species')">CANCEL</button>
     </div>
   `;
@@ -1925,10 +1848,10 @@ function saveSpeciesPhoto(id) {
   const idx = species.findIndex(s => s.id == id);
   if (idx === -1) return;
   species[idx].photo = preview.src;
-  if (!setData('species', species)) return;
+  setData('species', species);
   closeModal('modal-species');
   showToast('Photo saved ✓');
-  renderShroomadex();
+  renderPokedex();
 }
 
 function openEditSpeciesModal(id) {
@@ -1991,13 +1914,12 @@ function openEditSpeciesModal(id) {
     <div class="form-group">
       <label class="form-label">LOCATIONS ON PROPERTY</label>
       <div id="sf-locs" style="display:flex;flex-wrap:wrap;gap:6px;">
-        ${getLocations().map(l=>`
+        ${LOCATIONS.map(l=>`
           <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
             <input type="checkbox" value="${l}" ${(sp.locations||[]).includes(l)?'checked':''} style="accent-color:var(--green2);"> <span class="tiny" style="color:var(--dim);">${l}</span>
           </label>
         `).join('')}
       </div>
-      <input class="form-input" id="sf-new-location" placeholder="Add a new location, then save" style="margin-top:8px;">
     </div>
     <div class="form-group">
       <label class="form-label">ECOLOGY NOTES</label>
@@ -2008,7 +1930,7 @@ function openEditSpeciesModal(id) {
       <input type="color" id="sf-color" value="${sp.color||'#8B7355'}" style="width:100%;height:40px;border:1px solid var(--border2);border-radius:4px;background:var(--bg2);">
     </div>
     <div class="flex gap-8">
-      <button class="btn btn-primary" style="flex:1;" onclick="saveEditSpecies('${id}')">SAVE CHANGES</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="saveEditSpecies(${id})">SAVE CHANGES</button>
       <button class="btn btn-ghost" onclick="closeModal('modal-species')">CANCEL</button>
     </div>
   `;
@@ -2019,7 +1941,7 @@ function saveEditSpecies(id) {
   const species = getData('species', []);
   const idx = species.findIndex(s => s.id == id);
   if (idx === -1) return;
-  const locs = getCheckedSpeciesLocations();
+  const locs = [...document.querySelectorAll('#sf-locs input:checked')].map(c => c.value);
   species[idx] = {
     ...species[idx],
     name: document.getElementById('sf-name').value.trim(),
@@ -2035,10 +1957,10 @@ function saveEditSpecies(id) {
     notes: document.getElementById('sf-notes').value,
     color: document.getElementById('sf-color').value,
   };
-  if (!setData('species', species)) return;
+  setData('species', species);
   closeModal('modal-species');
   showToast('Species updated ✓');
-  renderShroomadex();
+  renderPokedex();
 }
 
 // ============================================================
